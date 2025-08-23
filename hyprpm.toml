@@ -1,0 +1,12 @@
+[repository]
+name = "hyprmodoro"
+authors = ["0xFMD"]
+commit_pins = [
+  ["4e242d086e20b32951fdc0ebcbfb4d41b5be8dcc", "348c1624fac6c93f57a06902e7ef2c0775515a73"],    # Hyprland v0.50.1
+]
+
+[hyprmodoro]
+description = "A Pomodoro timer plugin for Hyprland"
+authors = ["0xFMD"]
+output = "hyprmodoro.so"
+build = ["make all"]
