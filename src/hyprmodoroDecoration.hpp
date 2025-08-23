@@ -1,0 +1,88 @@
+#pragma once
+
+#define WLR_USE_UNSTABLE
+
+#include <hyprutils/math/Box.hpp>
+#include <hyprutils/math/Vector2D.hpp>
+#include <hyprland/src/render/decorations/IHyprWindowDecoration.hpp>
+#include <hyprland/src/render/OpenGL.hpp>
+#include <hyprland/src/helpers/AnimatedVariable.hpp>
+
+#include "HyprmodoroPassElement.hpp"
+#include "globals.hpp"
+
+enum ButtonAction {
+    START,
+    STOP,
+    RESTART,
+};
+
+struct Button {
+    ButtonAction action;
+
+    struct ButtonColor {
+        CHyprColor foreground;
+        CHyprColor background;
+    } color;
+
+    float                size     = 0;
+    std::string          icon     = "";
+    CBox                 hitbox   = {0, 0, 0, 0};
+    bool                 visible  = true;
+    PHLANIMVAR<float>    opacity  = nullptr;
+    PHLANIMVAR<Vector2D> position = nullptr;
+};
+
+struct Layout {
+    CBox container;
+    CBox title;
+};
+
+class HyprmodoroDecoration : public IHyprWindowDecoration {
+  public:
+    HyprmodoroDecoration(PHLWINDOW);
+
+    virtual ~HyprmodoroDecoration();
+    virtual SDecorationPositioningInfo getPositioningInfo();
+    virtual void                       onPositioningReply(const SDecorationPositioningReply& reply);
+    virtual void                       draw(PHLMONITOR, float const& a);
+    virtual eDecorationType            getDecorationType();
+    virtual void                       updateWindow(PHLWINDOW);
+    virtual void                       damageEntire();
+    virtual uint64_t                   getDecorationFlags();
+    virtual eDecorationLayer           getDecorationLayer();
+    virtual std::string                getDisplayName();
+
+    WP<HyprmodoroDecoration>           m_self;
+
+  private:
+    CBox                           assignedBoxGlobal();
+    void                           setupButtons();
+    void                           drawPass(PHLMONITOR, float const& a);
+    void                           renderProgressBorder(PHLMONITOR pMonitor, float alpha);
+    void                           renderTitleBar(PHLMONITOR pMonitor, float alpha);
+    void                           renderButtons(cairo_t* cairo, const Vector2D& buffer);
+    void                           renderTimer(cairo_t* cairo, const Vector2D& buffer);
+    void                           updateOpacity();
+    Vector2D                       cursorRelativeToContainer();
+    bool                           isHoveringTitle(const CBox& windowBox);
+    bool                           isValidInput();
+    void                           onMouseDown(SCallbackInfo& info, IPointer::SButtonEvent e);
+    void                           handleButtonClick(ButtonAction buttonAction);
+
+    CBox                           m_bAssignedGeometry;
+    PHLWINDOWREF                   m_pWindow;
+    SP<CTexture>                   m_pTitleTex;
+    SP<CTexture>                   m_pProgressTex;
+
+    Layout                         m_layout;
+    std::map<ButtonAction, Button> m_vButtons;
+    bool                           m_isNearContainer = false;
+
+    PHLANIMVAR<float>              m_hoverOffset = nullptr;
+    PHLANIMVAR<float>              m_textOpacity = nullptr;
+
+    SP<HOOK_CALLBACK_FN>           m_pMouseButtonCallback;
+
+    friend class HyprmodoroPassElement;
+};

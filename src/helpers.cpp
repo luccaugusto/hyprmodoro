@@ -1,0 +1,133 @@
+#include <hyprland/src/managers/input/InputManager.hpp>
+#include <hyprland/src/protocols/LayerShell.hpp>
+#include <hyprland/src/managers/AnimationManager.hpp>
+#include <hyprland/src/config/ConfigManager.hpp>
+
+#include "hyprmodoroDecoration.hpp"
+
+Vector2D HyprmodoroDecoration::cursorRelativeToContainer() {
+    const auto PMONITOR  = m_pWindow.lock()->m_monitor.lock();
+    const auto cursorPos = g_pInputManager->getMouseCoordsInternal() - PMONITOR->m_position;
+    return cursorPos - m_layout.container.pos();
+}
+
+bool HyprmodoroDecoration::isHoveringTitle(const CBox& windowBox) {
+    if (!isValidInput())
+        return false;
+
+    static const auto* PHOVERHEIGHT = (Hyprlang::FLOAT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:hover:height")->getDataStaticPtr();
+    static const auto* PHOVERWIDTH  = (Hyprlang::FLOAT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:hover:width")->getDataStaticPtr();
+
+    const auto         cursorPos = cursorRelativeToContainer();
+
+    const float        hoverWidth  = windowBox.width * (**PHOVERWIDTH / 100.0f);
+    const float        hoverHeight = windowBox.height * (**PHOVERHEIGHT / 100.0f);
+
+    CBox               hoverBox = {(m_layout.container.width - hoverWidth) / 2.0f, (m_layout.container.height - hoverHeight) / 2.0f, hoverWidth, hoverHeight};
+
+    return hoverBox.containsPoint(cursorPos);
+}
+
+void HyprmodoroDecoration::updateOpacity() {
+    static auto* const PTEXTHOVER   = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:hover:text")->getDataStaticPtr();
+    static auto* const PBUTTONHOVER = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:hover:buttons")->getDataStaticPtr();
+    static auto* const PTITLEMARGIN = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:title:margin")->getDataStaticPtr();
+    static auto* const PBUTTONSIZE  = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:buttons:size")->getDataStaticPtr();
+    static auto* const PSPACING     = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:title:spacing")->getDataStaticPtr();
+
+    const auto         currentState      = g_pGlobalState->pomodoroSession->getState();
+    const std::string  PLAYICON          = g_pGlobalState->pomodoroSession->isPaused() || currentState == State::STOPPED ? "⏵" : "⏸";
+    m_vButtons[ButtonAction::START].icon = PLAYICON;
+
+    const auto buttonsSpace = **PSPACING + **PBUTTONSIZE;
+    const auto textHover    = **PTEXTHOVER;
+    const auto buttonHover  = **PBUTTONHOVER;
+
+    for (auto& [_, button] : m_vButtons) {
+        *button.opacity = (!buttonHover || m_isNearContainer) ? 1.0f : 0.0f;
+    }
+
+    if (textHover) {
+        *m_textOpacity = m_isNearContainer ? 1.0f : 0.0f;
+        *m_hoverOffset = **PTITLEMARGIN + buttonsSpace;
+    } else {
+        *m_textOpacity = 1.0f;
+        *m_hoverOffset = ((buttonHover && m_isNearContainer) || !buttonHover) ? **PTITLEMARGIN + buttonsSpace : **PTITLEMARGIN;
+    }
+
+    if (currentState == State::STOPPED) {
+        *m_textOpacity = 0.0f;
+    }
+}
+
+bool HyprmodoroDecoration::isValidInput() {
+    static auto* const PENABLED = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:enabled")->getDataStaticPtr();
+
+    if (!**PENABLED)
+        return false;
+
+    const auto PWINDOW = m_pWindow.lock();
+
+    if (!m_pWindow->m_workspace || !validMapped(m_pWindow) || !m_pWindow->m_workspace->isVisible() || !g_pInputManager->m_exclusiveLSes.empty() ||
+        (g_pSeatManager->m_seatGrab && !g_pSeatManager->m_seatGrab->accepts(m_pWindow->m_wlSurface->resource())))
+        return false;
+
+    const auto WINDOWATCURSOR = g_pCompositor->vectorToWindowUnified(g_pInputManager->getMouseCoordsInternal(), RESERVED_EXTENTS | INPUT_EXTENTS | ALLOW_FLOATING);
+
+    if (WINDOWATCURSOR != PWINDOW && PWINDOW != g_pCompositor->m_lastWindow.lock())
+        return false;
+
+    // Check if input is on top or overlay shell layers
+    auto     PMONITOR     = g_pCompositor->m_lastMonitor.lock();
+    PHLLS    foundSurface = nullptr;
+    Vector2D surfaceCoords;
+
+    // Check top layer
+    g_pCompositor->vectorToLayerSurface(g_pInputManager->getMouseCoordsInternal(), &PMONITOR->m_layerSurfaceLayers[ZWLR_LAYER_SHELL_V1_LAYER_TOP], &surfaceCoords, &foundSurface);
+
+    if (foundSurface)
+        return false;
+
+    // Check overlay layer
+    g_pCompositor->vectorToLayerSurface(g_pInputManager->getMouseCoordsInternal(), &PMONITOR->m_layerSurfaceLayers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY], &surfaceCoords,
+                                        &foundSurface);
+
+    if (foundSurface)
+        return false;
+
+    // if (!VECINRECT(cursorRelativeToContainer(), 0, 0, m_layout.container.width, m_layout.container.height))
+    //     return false;
+
+    return true;
+}
+
+void HyprmodoroDecoration::setupButtons() {
+    static auto* const PBUTTONSIZE       = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:buttons:size")->getDataStaticPtr();
+    static auto* const PBUTTONFOREGROUND = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:buttons:color:foreground")->getDataStaticPtr();
+    static auto* const PBUTTONBACKGROUND = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:buttons:color:background")->getDataStaticPtr();
+
+    m_vButtons[ButtonAction::STOP]    = {.action = ButtonAction::STOP,
+                                         .color =
+                                             Button::ButtonColor{.foreground = CHyprColor((uint64_t)**PBUTTONFOREGROUND), .background = CHyprColor((uint64_t)**PBUTTONBACKGROUND)},
+                                         .size = (float)**PBUTTONSIZE,
+                                         .icon = "⏹"};
+    m_vButtons[ButtonAction::START]   = {.action = ButtonAction::START,
+                                         .color =
+                                             Button::ButtonColor{.foreground = CHyprColor((uint64_t)**PBUTTONFOREGROUND), .background = CHyprColor((uint64_t)**PBUTTONBACKGROUND)},
+                                         .size = (float)**PBUTTONSIZE,
+                                         .icon = "⏵"};
+    m_vButtons[ButtonAction::RESTART] = {.action = ButtonAction::RESTART,
+                                         .color =
+                                             Button::ButtonColor{.foreground = CHyprColor((uint64_t)**PBUTTONFOREGROUND), .background = CHyprColor((uint64_t)**PBUTTONBACKGROUND)},
+                                         .size = (float)**PBUTTONSIZE,
+                                         .icon = "↻"};
+
+    g_pAnimationManager->createAnimation(0.0f, m_vButtons[ButtonAction::STOP].opacity, g_pConfigManager->getAnimationPropertyConfig("fadeOut"), AVARDAMAGE_ENTIRE);
+    g_pAnimationManager->createAnimation(0.0f, m_vButtons[ButtonAction::START].opacity, g_pConfigManager->getAnimationPropertyConfig("fadeOut"), AVARDAMAGE_ENTIRE);
+    g_pAnimationManager->createAnimation(0.0f, m_vButtons[ButtonAction::RESTART].opacity, g_pConfigManager->getAnimationPropertyConfig("fadeOut"), AVARDAMAGE_ENTIRE);
+
+    g_pAnimationManager->createAnimation(Vector2D(0, 0), m_vButtons[ButtonAction::START].position, g_pConfigManager->getAnimationPropertyConfig("windowsMove"), AVARDAMAGE_ENTIRE);
+    g_pAnimationManager->createAnimation(Vector2D(0, 0), m_vButtons[ButtonAction::STOP].position, g_pConfigManager->getAnimationPropertyConfig("windowsMove"), AVARDAMAGE_ENTIRE);
+    g_pAnimationManager->createAnimation(Vector2D(0, 0), m_vButtons[ButtonAction::RESTART].position, g_pConfigManager->getAnimationPropertyConfig("windowsMove"),
+                                         AVARDAMAGE_ENTIRE);
+}

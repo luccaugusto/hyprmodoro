@@ -1,0 +1,42 @@
+# build
+/result
+/build/
+/compile_commands.json
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# clangd
+/.cache
+
+# direnv
+/.envrc
+/.direnv/
+
+
+
+# Executables
+*.exe
+*.out
+*.app
+
+# vscode
+/.vscode/
+
+# Nix
+result
+result-man
