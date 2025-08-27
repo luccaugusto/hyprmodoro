@@ -11,26 +11,25 @@
 void HyprmodoroDecoration::renderTitleBar(PHLMONITOR pMonitor, float alpha) {
     static auto* const PTITLEFLOATINGWINDOW = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:title:floating_window")->getDataStaticPtr();
 
-    const auto         windowBox = assignedBoxGlobal();
-
     if (!**PTITLEFLOATINGWINDOW && m_pWindow.lock()->m_isFloating)
         return;
 
     static auto* const PTEXTSIZE    = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:text:size")->getDataStaticPtr();
     static auto* const PTITLEMARGIN = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:title:margin")->getDataStaticPtr();
 
-    const auto         textSize = **PTEXTSIZE;
+    const auto         windowBox = assignedBoxGlobal();
+    const auto         textSize  = **PTEXTSIZE;
+    const auto         yOffset   = m_hoverOffset->value() + **PTITLEMARGIN + textSize;
 
-    const auto         yOffset = m_hoverOffset->value() + **PTITLEMARGIN;
     // const float        buttonsSpace = **PSPACING + **PBUTTONSIZE;
     //    auto        yTargetMax   = (buttonsSpace + **PTITLEMARGIN) * 2; // maximum height for cairo surface
 
-    m_layout.container = CBox(windowBox.x + (windowBox.width - windowBox.width / 2) / 2, (windowBox.y - (textSize + yOffset)), windowBox.width / 2, (textSize + yOffset));
+    m_layout.container = CBox(windowBox.x + (windowBox.width - windowBox.width / 2) / 2, (windowBox.y - yOffset), windowBox.width / 2, yOffset);
+
+    m_layout.container.translate(-pMonitor->m_position).scale(pMonitor->m_scale).round();
 
     if (m_pTitleTex->m_texID == 0)
         m_pTitleTex->allocate();
-
-    m_layout.container.scale(pMonitor->m_scale).round();
 
     const auto CAIROSURFACE = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, m_layout.container.width, m_layout.container.height);
 
@@ -41,8 +40,6 @@ void HyprmodoroDecoration::renderTitleBar(PHLMONITOR pMonitor, float alpha) {
     cairo_set_operator(CAIRO, CAIRO_OPERATOR_CLEAR);
     cairo_paint(CAIRO);
     cairo_restore(CAIRO);
-
-    cairo_scale(CAIRO, pMonitor->m_scale, pMonitor->m_scale);
 
     renderTimer(CAIRO, Vector2D(m_layout.container.width, m_layout.container.height));
     renderButtons(CAIRO, Vector2D(m_layout.container.width, m_layout.container.height));
@@ -207,7 +204,7 @@ void HyprmodoroDecoration::renderProgressBorder(PHLMONITOR pMonitor, float alpha
     const float  perimeter    = 2 * (windowBox.width + windowBox.height);
     const double targetLength = perimeter * SESSIONPROGRESS * 0.5;
 
-    windowBox.scale(pMonitor->m_scale).round();
+    windowBox.translate(-pMonitor->m_position).scale(pMonitor->m_scale).round();
 
     const CHyprColor borderColor  = CHyprColor(**BORDERCOLOR);
     const auto       CAIROSURFACE = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, windowBox.width, windowBox.height);

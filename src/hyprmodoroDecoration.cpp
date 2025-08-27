@@ -95,9 +95,8 @@ CBox HyprmodoroDecoration::assignedBoxGlobal() {
 
     const auto PWORKSPACE      = PWINDOW->m_workspace;
     const auto WORKSPACEOFFSET = PWORKSPACE && !PWINDOW->m_pinned ? PWORKSPACE->m_renderOffset->value() : Vector2D();
-    const auto MONITOROFFSET   = PWINDOW->m_monitor.lock()->m_position;
 
-    return box.translate(WORKSPACEOFFSET - MONITOROFFSET);
+    return box.translate(WORKSPACEOFFSET);
 }
 
 void HyprmodoroDecoration::onMouseDown(SCallbackInfo& info, IPointer::SButtonEvent e) {
