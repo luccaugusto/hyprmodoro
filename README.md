@@ -40,18 +40,19 @@ plugin:hyprmodoro:rest_duration               # Rest session length (default: 5)
 # Title configurations
 plugin:hyprmodoro:title:enabled               # Show timer on window title bars (default: true)
 plugin:hyprmodoro:title:all_windows           # Show title on all windows or only the active window (default: false)
+plugin:hyprmodoro:title:reserve_space_all     # Reserve space for title bar for all windows (default: false)
 plugin:hyprmodoro:title:floating_window       # Show title on floating windows (default: false)
-plugin:hyprmodoro:title:margin                # Margin around title elements (default: 8)
-plugin:hyprmodoro:title:spacing               # Spacing between elements (default: 12)
+plugin:hyprmodoro:title:margin                # Margin around title elements (default: 15)
+plugin:hyprmodoro:title:spacing               # Spacing between elements (default: 8)
 
-# Progress border configurations
+# Progress border configurations  
 plugin:hyprmodoro:border:enabled              # Show progress border (default: true)
 plugin:hyprmodoro:border:all_windows          # Show progress border on all windows or only the active window (default: false)
 plugin:hyprmodoro:border:floating_window      # Show progress border on floating windows (default: false)
 plugin:hyprmodoro:border:color                # Progress border color (default: rgba(33333388))
 
 # Text configurations
-plugin:hyprmodoro:text:color                  # Timer text color (default: white)
+plugin:hyprmodoro:text:color                  # Timer text color (default: rgba(ffffffff))
 plugin:hyprmodoro:text:font                   # Font family (default: Sans)
 plugin:hyprmodoro:text:size                   # Font size (default: 17)
 plugin:hyprmodoro:text:work_prefix            # Prefix for work sessions (default: 🍅)
@@ -60,14 +61,14 @@ plugin:hyprmodoro:text:skip_on_click          # Allow skipping a session by clic
 
 # Buttons configurations
 plugin:hyprmodoro:buttons:size                # Button size (default: 17)
-plugin:hyprmodoro:buttons:color:foreground    # Button text color (default: white)
-plugin:hyprmodoro:buttons:color:background    # Button background color (default: semi-transparent white)
+plugin:hyprmodoro:buttons:color:foreground    # Button text color (default: rgba(ffffffff))
+plugin:hyprmodoro:buttons:color:background    # Button background color (default: rgba(ffffff44))
 
 # Hover behavior
 plugin:hyprmodoro:hover:text                  # Show text on hover (default: false)
 plugin:hyprmodoro:hover:buttons               # Show buttons on hover (default: true)
-plugin:hyprmodoro:hover:height                # Percentage of window height (default: 10.0)
-plugin:hyprmodoro:hover:width                 # Percentage of window width (default: 20.0)
+plugin:hyprmodoro:hover:height                # Percentage of window height for hover area (default: 10.0)
+plugin:hyprmodoro:hover:width                 # Percentage of window width for hover area (default: 20.0)
 
 # Window configurations
 plugin:hyprmodoro:window:min_width            # Minimum window width to show timer (default: 300)
@@ -101,11 +102,11 @@ hyprctl dispatch hyprmodoro:setRest 5
 
 ```bash
 # Get current progress
-hyprctl plugin:hyprmodoro:getProgress
+hyprctl hyprmodoro:getProgress
 
 # Get current state
-hyprctl plugin:hyprmodoro:getState
+hyprctl hyprmodoro:getState
 
 # Get remaining time
-hyprctl plugin:hyprmodoro:getTime
+hyprctl hyprmodoro:getTime
 ```
