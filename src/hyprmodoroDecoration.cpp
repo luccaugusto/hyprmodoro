@@ -30,8 +30,10 @@ HyprmodoroDecoration::~HyprmodoroDecoration() {
 }
 
 SDecorationPositioningInfo HyprmodoroDecoration::getPositioningInfo() {
-    static auto* const         PISENABLED       = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:enabled")->getDataStaticPtr();
-    static auto* const         PTITLEISENABLED  = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:title:enabled")->getDataStaticPtr();
+    static auto* const         PISENABLED      = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:enabled")->getDataStaticPtr();
+    static auto* const         PTITLEISENABLED = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:title:enabled")->getDataStaticPtr();
+    static auto* const         PMINWINDOWWIDTH = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:window:min_width")->getDataStaticPtr();
+
     static auto* const         PRESERVESPACEALL = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:title:reserve_space_all")->getDataStaticPtr();
     static auto* const         PTITLEALLWINDOWS = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:title:all_windows")->getDataStaticPtr();
     static auto* const         PTEXTHOVER       = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:hover:text")->getDataStaticPtr();
@@ -55,6 +57,9 @@ SDecorationPositioningInfo HyprmodoroDecoration::getPositioningInfo() {
     const auto PLASTWINDOW = g_pCompositor->m_lastWindow.lock();
 
     if (!**PRESERVESPACEALL && !**PTITLEALLWINDOWS && PWINDOW != PLASTWINDOW) // only focused windows
+        return info;
+
+    if (PWINDOW->m_size.x <= **PMINWINDOWWIDTH)
         return info;
 
     const auto textSize      = **PTEXTSIZE;
@@ -177,10 +182,9 @@ void HyprmodoroDecoration::draw(PHLMONITOR pMonitor, const float& a) {
 }
 
 void HyprmodoroDecoration::drawPass(PHLMONITOR pMonitor, const float& a) {
-    static auto* const PENABLED        = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:enabled")->getDataStaticPtr();
-    static auto* const PMINWINDOWWIDTH = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:window:min_width")->getDataStaticPtr();
-    static auto* const PHOVERTITLE     = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:hover:text")->getDataStaticPtr();
-    static auto* const PHOVERBUTTONS   = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:hover:buttons")->getDataStaticPtr();
+    static auto* const PENABLED      = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:enabled")->getDataStaticPtr();
+    static auto* const PHOVERTITLE   = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:hover:text")->getDataStaticPtr();
+    static auto* const PHOVERBUTTONS = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:hover:buttons")->getDataStaticPtr();
 
     static auto* const PBORDERENABLED    = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:border:enabled")->getDataStaticPtr();
     static auto* const PTITLEENABLED     = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:title:enabled")->getDataStaticPtr();
@@ -203,8 +207,6 @@ void HyprmodoroDecoration::drawPass(PHLMONITOR pMonitor, const float& a) {
     }
 
     if (**PTITLEENABLED) {
-        if (windowBox.width <= **PMINWINDOWWIDTH) // don't render for small windows
-            return;
 
         if ((**PTITLEALLWINDOWS && (!pMonitor->m_activeWorkspace->m_hasFullscreenWindow || PWINDOW->isFullscreen())) || PWINDOW == PLASTWINDOW) {
             renderTitleBar(pMonitor, a);

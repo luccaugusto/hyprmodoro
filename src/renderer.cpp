@@ -10,11 +10,15 @@
 
 void HyprmodoroDecoration::renderTitleBar(PHLMONITOR pMonitor, float alpha) {
     static auto* const PTITLEFLOATINGWINDOW = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:title:floating_window")->getDataStaticPtr();
+    static auto* const PMINWINDOWWIDTH      = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:window:min_width")->getDataStaticPtr();
 
     if (!**PTITLEFLOATINGWINDOW && m_pWindow.lock()->m_isFloating)
         return;
 
     const auto windowBox = assignedBoxGlobal();
+    if (windowBox.width <= **PMINWINDOWWIDTH) // don't render for small windows
+        return;
+
     updateHoverOffset();
     const auto yOffset = m_hoverOffset->value();
 
