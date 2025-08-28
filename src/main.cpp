@@ -93,7 +93,7 @@ void onWindowOpen(void* self, std::any data) {
     if (!(**IS_HYPRMODORO_ENABLED) || PWINDOW == nullptr)
         return;
 
-    if (std::ranges::any_of(PWINDOW->m_windowDecorations, [](const auto& d) { return d->getDisplayName() == "hyprmodro"; }))
+    if (std::ranges::any_of(PWINDOW->m_windowDecorations, [](const auto& d) { return d->getDisplayName() == "hyprmodoro"; }))
         return;
 
     auto decoration = makeUnique<HyprmodoroDecoration>(PWINDOW);
