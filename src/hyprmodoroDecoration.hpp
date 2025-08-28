@@ -63,7 +63,7 @@ class HyprmodoroDecoration : public IHyprWindowDecoration {
     void                           renderTitleBar(PHLMONITOR pMonitor, float alpha);
     void                           renderButtons(cairo_t* cairo, const Vector2D& buffer);
     void                           renderTimer(cairo_t* cairo, const Vector2D& buffer);
-    void                           updateOpacity();
+    void                           updateHoverOffset();
     Vector2D                       cursorRelativeToContainer();
     bool                           isHoveringTitle(const CBox& windowBox);
     bool                           isValidInput();
@@ -77,6 +77,7 @@ class HyprmodoroDecoration : public IHyprWindowDecoration {
 
     Layout                         m_layout;
     std::map<ButtonAction, Button> m_vButtons;
+
     bool                           m_isNearContainer = false;
 
     PHLANIMVAR<float>              m_hoverOffset = nullptr;

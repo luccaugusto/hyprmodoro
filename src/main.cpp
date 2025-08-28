@@ -155,10 +155,12 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:buttons:color:background", Hyprlang::INT{*configStringToInt("rgba(ffffff44)")});
 
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:title:enabled", Hyprlang::INT{1});
+    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:title:reserve_space_all", Hyprlang::INT{0});
+
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:title:floating_window", Hyprlang::INT{0});
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:title:all_windows", Hyprlang::INT{0});
-    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:title:margin", Hyprlang::INT{8});
-    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:title:spacing", Hyprlang::INT{12});
+    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:title:margin", Hyprlang::INT{15});
+    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:title:spacing", Hyprlang::INT{8});
 
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:hover:text", Hyprlang::INT{0});
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:hover:buttons", Hyprlang::INT{1});

@@ -26,18 +26,21 @@ HyprmodoroDecoration::HyprmodoroDecoration(PHLWINDOW pWindow) : IHyprWindowDecor
 HyprmodoroDecoration::~HyprmodoroDecoration() {
     m_pMouseButtonCallback = nullptr;
     m_vButtons.clear();
+    std::erase(g_pGlobalState->decorations, m_self);
 }
 
 SDecorationPositioningInfo HyprmodoroDecoration::getPositioningInfo() {
-    static auto* const         PISENABLED      = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:enabled")->getDataStaticPtr();
-    static auto* const         PTITLEISENABLED = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:title:enabled")->getDataStaticPtr();
-
-    static auto* const         PTEXTSIZE      = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:text:size")->getDataStaticPtr();
-    static auto* const         PWINDOWPADDING = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:window:padding")->getDataStaticPtr();
-    static auto* const         PBUTTONHOVER   = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:hover:buttons")->getDataStaticPtr();
-    static auto* const         PTEXTENABLED   = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:hover:text")->getDataStaticPtr();
-    static auto* const         PBUTTONSIZE    = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:buttons:size")->getDataStaticPtr();
-    static auto* const         PSPACING       = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:title:spacing")->getDataStaticPtr();
+    static auto* const         PISENABLED       = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:enabled")->getDataStaticPtr();
+    static auto* const         PTITLEISENABLED  = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:title:enabled")->getDataStaticPtr();
+    static auto* const         PRESERVESPACEALL = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:title:reserve_space_all")->getDataStaticPtr();
+    static auto* const         PTITLEALLWINDOWS = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:title:all_windows")->getDataStaticPtr();
+    static auto* const         PTEXTHOVER       = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:hover:text")->getDataStaticPtr();
+    static auto* const         PBUTTONHOVER     = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:hover:buttons")->getDataStaticPtr();
+    static auto* const         PTITLEMARGIN     = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:title:margin")->getDataStaticPtr();
+    static auto* const         PBUTTONSIZE      = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:buttons:size")->getDataStaticPtr();
+    static auto* const         PSPACING         = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:title:spacing")->getDataStaticPtr();
+    static auto* const         PTEXTSIZE        = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:text:size")->getDataStaticPtr();
+    static auto* const         PWINDOWPADDING   = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:window:padding")->getDataStaticPtr();
 
     SDecorationPositioningInfo info;
     info.edges    = DECORATION_EDGE_BOTTOM | DECORATION_EDGE_LEFT | DECORATION_EDGE_RIGHT | DECORATION_EDGE_TOP;
@@ -48,18 +51,30 @@ SDecorationPositioningInfo HyprmodoroDecoration::getPositioningInfo() {
     if (!**PISENABLED || !**PTITLEISENABLED)
         return info;
 
-    const auto textHover     = **PTEXTENABLED;
-    const auto buttonHover   = **PBUTTONHOVER;
-    const auto windowPadding = **PWINDOWPADDING;
+    const auto PWINDOW     = m_pWindow.lock();
+    const auto PLASTWINDOW = g_pCompositor->m_lastWindow.lock();
+
+    if (!**PRESERVESPACEALL && !**PTITLEALLWINDOWS && PWINDOW != PLASTWINDOW) // only focused windows
+        return info;
+
     const auto textSize      = **PTEXTSIZE;
     const auto buttonSize    = **PBUTTONSIZE;
     const auto spacing       = **PSPACING;
+    const auto buttonsSpace  = spacing + buttonSize;
+    const auto textHover     = **PTEXTHOVER;
+    const auto buttonHover   = **PBUTTONHOVER;
+    const auto windowPadding = **PWINDOWPADDING;
+    const auto POMDOOROSTATE = g_pGlobalState->pomodoroSession->getState();
+    float      yOffset       = 0.0f;
 
-    float      yOffset = 0.0;
-    if (textHover) {
-        yOffset = windowPadding + textSize + buttonSize + spacing;
+    if (textHover && buttonHover && !m_isNearContainer) {
+        yOffset = windowPadding;
+    } else if ((buttonHover && m_isNearContainer) || !buttonHover) {
+        yOffset = POMDOOROSTATE == State::STOPPED ? (windowPadding + buttonSize + spacing) : (windowPadding + buttonSize + spacing + textSize);
+    } else if (POMDOOROSTATE != State::STOPPED) {
+        yOffset = windowPadding + textSize + spacing;
     } else {
-        yOffset = ((buttonHover && m_isNearContainer) || !buttonHover) ? (windowPadding + textSize + buttonSize + spacing) : (windowPadding + textSize + spacing);
+        yOffset = windowPadding;
     }
 
     info.desiredExtents = {{0.0, yOffset}, {0, 0}};
@@ -127,23 +142,20 @@ void HyprmodoroDecoration::onMouseDown(SCallbackInfo& info, IPointer::SButtonEve
 }
 
 void HyprmodoroDecoration::handleButtonClick(ButtonAction buttonAction) {
+    const auto currentState = g_pGlobalState->pomodoroSession->getState();
     if (buttonAction == ButtonAction::START) {
-        if ((g_pGlobalState->pomodoroSession->getState() == State::WORKING || g_pGlobalState->pomodoroSession->getState() == State::RESTING) &&
-            !g_pGlobalState->pomodoroSession->isPaused())
+        if ((currentState == State::WORKING || currentState == State::RESTING) && !g_pGlobalState->pomodoroSession->isPaused())
             g_pGlobalState->pomodoroSession->pause();
         else if (g_pGlobalState->pomodoroSession->isPaused())
             g_pGlobalState->pomodoroSession->resume();
         else
             g_pGlobalState->pomodoroSession->start();
 
-    } else if (buttonAction == ButtonAction::STOP) {
+    } else if (buttonAction == ButtonAction::STOP)
         g_pGlobalState->pomodoroSession->stop();
 
-    } else if (buttonAction == ButtonAction::RESTART) {
+    else if (buttonAction == ButtonAction::RESTART)
         g_pGlobalState->pomodoroSession->reset();
-    }
-
-    updateWindow(m_pWindow.lock());
 }
 
 void HyprmodoroDecoration::draw(PHLMONITOR pMonitor, const float& a) {
@@ -167,25 +179,23 @@ void HyprmodoroDecoration::draw(PHLMONITOR pMonitor, const float& a) {
 void HyprmodoroDecoration::drawPass(PHLMONITOR pMonitor, const float& a) {
     static auto* const PENABLED        = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:enabled")->getDataStaticPtr();
     static auto* const PMINWINDOWWIDTH = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:window:min_width")->getDataStaticPtr();
+    static auto* const PHOVERTITLE     = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:hover:text")->getDataStaticPtr();
+    static auto* const PHOVERBUTTONS   = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:hover:buttons")->getDataStaticPtr();
 
     static auto* const PBORDERENABLED    = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:border:enabled")->getDataStaticPtr();
     static auto* const PTITLEENABLED     = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:title:enabled")->getDataStaticPtr();
-    static auto* const PHOVERTITLE       = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:hover:text")->getDataStaticPtr();
-    static auto* const PHOVERBUTTONS     = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:hover:buttons")->getDataStaticPtr();
     static auto* const PBORDERALLWINDOWS = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:border:all_windows")->getDataStaticPtr();
     static auto* const PTITLEALLWINDOWS  = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:title:all_windows")->getDataStaticPtr();
 
     if (!**PENABLED)
         return;
-    auto windowBox = assignedBoxGlobal();
+    const auto windowBox = assignedBoxGlobal();
     if (windowBox.width <= 0 || windowBox.height <= 0)
         return;
 
     const auto SESSIONPROGRESS = g_pGlobalState->pomodoroSession->getProgress();
-
-    const auto PWINDOW     = m_pWindow.lock();
-    const auto PLASTWINDOW = g_pCompositor->m_lastWindow.lock();
-
+    const auto PWINDOW         = m_pWindow.lock();
+    const auto PLASTWINDOW     = g_pCompositor->m_lastWindow.lock();
     if (**PBORDERENABLED && SESSIONPROGRESS <= 1.0f && SESSIONPROGRESS > 0.0f) {
         if (**PBORDERALLWINDOWS || PWINDOW == PLASTWINDOW) {
             renderProgressBorder(pMonitor, a);
@@ -195,25 +205,45 @@ void HyprmodoroDecoration::drawPass(PHLMONITOR pMonitor, const float& a) {
     if (**PTITLEENABLED) {
         if (windowBox.width <= **PMINWINDOWWIDTH) // don't render for small windows
             return;
-        updateOpacity();
-        bool hoverState = isHoveringTitle(windowBox);
-        if (hoverState != m_isNearContainer && (**PHOVERTITLE || **PHOVERBUTTONS)) {
-            m_isNearContainer = hoverState;
-            g_pDecorationPositioner->repositionDeco(this);
-            damageEntire();
-        }
 
-        if ((**PTITLEALLWINDOWS && !PLASTWINDOW->isFullscreen()) || PWINDOW == PLASTWINDOW) {
+        if ((**PTITLEALLWINDOWS && (!pMonitor->m_activeWorkspace->m_hasFullscreenWindow || PWINDOW->isFullscreen())) || PWINDOW == PLASTWINDOW) {
             renderTitleBar(pMonitor, a);
         }
     }
     updateWindow(m_pWindow.lock());
+    damageEntire();
 }
 
 void HyprmodoroDecoration::updateWindow(PHLWINDOW pWindow) {
-    if (g_pGlobalState->pomodoroSession) {
-        g_pGlobalState->pomodoroSession->getState();
-        damageEntire();
+    static auto* const PISTITLEENABLED = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:title:enabled")->getDataStaticPtr();
+
+    if (!**PISTITLEENABLED || !g_pGlobalState->pomodoroSession)
+        return;
+
+    static auto* const PTITLEALLWINDOWS = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:title:all_windows")->getDataStaticPtr();
+    static auto* const PHOVERTITLE      = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:hover:text")->getDataStaticPtr();
+    static auto* const PHOVERBUTTONS    = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:hover:buttons")->getDataStaticPtr();
+
+    const auto         PWINDOW     = m_pWindow.lock();
+    const auto         PLASTWINDOW = g_pCompositor->m_lastWindow.lock();
+
+    bool               hoverState     = isHoveringTitle(assignedBoxGlobal());
+    bool               needReposition = false;
+
+    if (!**PTITLEALLWINDOWS && PWINDOW != PLASTWINDOW) {
+        needReposition = true;
+    }
+
+    if (g_pGlobalState->pomodoroSession->getState() != g_pGlobalState->pomodoroSession->getLastState())
+        needReposition = true;
+
+    if (hoverState != m_isNearContainer && (**PHOVERTITLE || **PHOVERBUTTONS)) {
+        m_isNearContainer = hoverState;
+        needReposition    = true;
+    }
+
+    if (needReposition) {
+        g_pDecorationPositioner->repositionDeco(this);
     }
 }
 

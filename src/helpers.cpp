@@ -15,8 +15,10 @@ bool HyprmodoroDecoration::isHoveringTitle(const CBox& windowBox) {
     if (!isValidInput())
         return false;
 
-    static const auto* PHOVERHEIGHT = (Hyprlang::FLOAT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:hover:height")->getDataStaticPtr();
-    static const auto* PHOVERWIDTH  = (Hyprlang::FLOAT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:hover:width")->getDataStaticPtr();
+    static auto* const PHOVERTITLE   = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:hover:text")->getDataStaticPtr();
+    static auto* const PHOVERBUTTONS = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:hover:buttons")->getDataStaticPtr();
+    static const auto* PHOVERHEIGHT  = (Hyprlang::FLOAT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:hover:height")->getDataStaticPtr();
+    static const auto* PHOVERWIDTH   = (Hyprlang::FLOAT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:hover:width")->getDataStaticPtr();
 
     const auto         cursorPos = cursorRelativeToContainer();
 
@@ -28,36 +30,20 @@ bool HyprmodoroDecoration::isHoveringTitle(const CBox& windowBox) {
     return hoverBox.containsPoint(cursorPos);
 }
 
-void HyprmodoroDecoration::updateOpacity() {
+void HyprmodoroDecoration::updateHoverOffset() {
     static auto* const PTEXTHOVER   = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:hover:text")->getDataStaticPtr();
     static auto* const PBUTTONHOVER = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:hover:buttons")->getDataStaticPtr();
     static auto* const PTITLEMARGIN = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:title:margin")->getDataStaticPtr();
     static auto* const PBUTTONSIZE  = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:buttons:size")->getDataStaticPtr();
     static auto* const PSPACING     = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:title:spacing")->getDataStaticPtr();
+    static auto* const PTEXTSIZE    = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:text:size")->getDataStaticPtr();
 
-    const auto         currentState      = g_pGlobalState->pomodoroSession->getState();
-    const std::string  PLAYICON          = g_pGlobalState->pomodoroSession->isPaused() || currentState == State::STOPPED ? "⏵" : "⏸";
-    m_vButtons[ButtonAction::START].icon = PLAYICON;
+    const auto         buttonsSpace = **PSPACING + **PBUTTONSIZE;
+    const auto         textHover    = **PTEXTHOVER;
+    const auto         buttonHover  = **PBUTTONHOVER;
+    const auto         textSize     = **PTEXTSIZE;
 
-    const auto buttonsSpace = **PSPACING + **PBUTTONSIZE;
-    const auto textHover    = **PTEXTHOVER;
-    const auto buttonHover  = **PBUTTONHOVER;
-
-    for (auto& [_, button] : m_vButtons) {
-        *button.opacity = (!buttonHover || m_isNearContainer) ? 1.0f : 0.0f;
-    }
-
-    if (textHover) {
-        *m_textOpacity = m_isNearContainer ? 1.0f : 0.0f;
-        *m_hoverOffset = **PTITLEMARGIN + buttonsSpace;
-    } else {
-        *m_textOpacity = 1.0f;
-        *m_hoverOffset = ((buttonHover && m_isNearContainer) || !buttonHover) ? **PTITLEMARGIN + buttonsSpace : **PTITLEMARGIN;
-    }
-
-    if (currentState == State::STOPPED) {
-        *m_textOpacity = 0.0f;
-    }
+    *m_hoverOffset = **PTITLEMARGIN + textSize + (((buttonHover && m_isNearContainer) || !buttonHover) ? buttonsSpace : 0.0f);
 }
 
 bool HyprmodoroDecoration::isValidInput() {

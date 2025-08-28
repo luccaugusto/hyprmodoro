@@ -32,6 +32,8 @@ class Pomodoro {
     std::string getFormattedTime() const;
     float       getProgress();
     State       getState();
+    State       getLastState() const;
+    void        setState(State newState);
     void        setSessionLength(int length);
     void        setRestLength(int length);
 
@@ -44,4 +46,5 @@ class Pomodoro {
     int                                   m_restLength;
     bool                                  m_pause;
     State                                 m_currentState;
+    State                                 m_lastState;
 };

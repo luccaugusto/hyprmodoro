@@ -7,6 +7,7 @@ Pomodoro::Pomodoro(const int sessionLengthMinutes, const int restLengthMinutes) 
     m_progress      = 0.0f;
     m_round         = 0;
     m_currentState  = State::STOPPED;
+    m_lastState     = State::STOPPED;
     m_pause         = false;
 }
 
@@ -15,24 +16,24 @@ Pomodoro::~Pomodoro() {
 }
 
 void Pomodoro::start() {
-    m_startTime    = std::chrono::steady_clock::now();
-    m_currentState = State::WORKING;
-    m_pause        = false;
-    m_progress     = 0.0f;
+    m_startTime = std::chrono::steady_clock::now();
+    setState(State::WORKING);
+    m_pause    = false;
+    m_progress = 0.0f;
 }
 
 void Pomodoro::startRest() {
-    m_startTime    = std::chrono::steady_clock::now();
-    m_currentState = State::RESTING;
-    m_pause        = false;
-    m_progress     = 0.0f;
+    m_startTime = std::chrono::steady_clock::now();
+    setState(State::RESTING);
+    m_pause    = false;
+    m_progress = 0.0f;
 }
 
 void Pomodoro::stop() {
-    m_progress     = 0.0f;
-    m_round        = 0;
-    m_currentState = State::STOPPED;
-    m_pause        = false;
+    m_progress = 0.0f;
+    m_round    = 0;
+    setState(State::STOPPED);
+    m_pause = false;
 }
 
 void Pomodoro::pause() {
@@ -65,6 +66,11 @@ void Pomodoro::skip() {
     } else if (m_currentState == State::WORKING) {
         startRest();
     }
+}
+
+void Pomodoro::setState(State newState) {
+    m_lastState    = m_currentState;
+    m_currentState = newState;
 }
 
 void Pomodoro::setRestLength(int minutes) {
@@ -119,6 +125,10 @@ State Pomodoro::getState() {
     return m_currentState;
 }
 
+State Pomodoro::getLastState() const {
+    return m_lastState;
+}
+
 int Pomodoro::getSessionLength() const {
     return m_sessionLength;
 }
@@ -130,7 +140,7 @@ bool Pomodoro::isPaused() {
 bool Pomodoro::isFinished() {
     if (getRemainingTime() <= 0 && m_currentState == State::WORKING) {
         this->m_round++;
-        m_currentState = State::FINISHED;
+        setState(State::FINISHED);
         startRest();
         return true;
     }
