@@ -1,5 +1,6 @@
 #pragma once
 #include <hyprland/src/render/pass/PassElement.hpp>
+#include <hyprland/src/render/OpenGL.hpp>
 
 class HyprmodoroDecoration;
 

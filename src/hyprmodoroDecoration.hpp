@@ -2,11 +2,8 @@
 
 #define WLR_USE_UNSTABLE
 
-#include <hyprutils/math/Box.hpp>
-#include <hyprutils/math/Vector2D.hpp>
 #include <hyprland/src/render/decorations/IHyprWindowDecoration.hpp>
-#include <hyprland/src/render/OpenGL.hpp>
-#include <hyprland/src/helpers/AnimatedVariable.hpp>
+#include <hyprland/src/devices/IPointer.hpp>
 
 #include "HyprmodoroPassElement.hpp"
 #include "globals.hpp"

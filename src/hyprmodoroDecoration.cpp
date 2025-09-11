@@ -1,12 +1,8 @@
 #include <hyprland/src/Compositor.hpp>
-#include <hyprland/src/desktop/Window.hpp>
-#include <hyprland/src/render/OpenGL.hpp>
 #include <hyprland/src/render/Renderer.hpp>
-#include <hyprland/src/managers/AnimationManager.hpp>
+#include <hyprland/src/managers/animation/AnimationManager.hpp>
 #include <hyprland/src/config/ConfigManager.hpp>
-#include <hyprland/src/managers/input/InputManager.hpp>
-#include <hyprutils/math/Vector2D.hpp>
-#include <src/plugins/PluginAPI.hpp>
+
 #include "hyprmodoroDecoration.hpp"
 #include "HyprmodoroPassElement.hpp"
 #include "pomodoro.hpp"

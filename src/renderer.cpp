@@ -1,6 +1,4 @@
-#include <hyprland/src/render/OpenGL.hpp>
-#include <hyprutils/math/Box.hpp>
-#include <hyprutils/math/Vector2D.hpp>
+#include <hyprland/src/desktop/Window.hpp>
 
 #include <cairo/cairo.h>
 #include <pango/pangocairo.h>
@@ -55,7 +53,7 @@ void HyprmodoroDecoration::renderTitleBar(PHLMONITOR pMonitor, float alpha) {
 #endif
 
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_layout.container.width, m_layout.container.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, DATA);
-    g_pHyprOpenGL->renderTexture(m_pTitleTex, m_layout.container, alpha);
+    g_pHyprOpenGL->renderTexture(m_pTitleTex, m_layout.container, {.a = alpha});
 
     cairo_destroy(CAIRO);
     cairo_surface_destroy(CAIROSURFACE);
@@ -296,7 +294,7 @@ void HyprmodoroDecoration::renderProgressBorder(PHLMONITOR pMonitor, float alpha
 #endif
 
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, windowBox.width, windowBox.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, DATA);
-    g_pHyprOpenGL->renderTexture(m_pProgressTex, windowBox, alpha);
+    g_pHyprOpenGL->renderTexture(m_pProgressTex, windowBox, {.a = alpha});
 
     cairo_destroy(CAIRO);
     cairo_surface_destroy(CAIROSURFACE);

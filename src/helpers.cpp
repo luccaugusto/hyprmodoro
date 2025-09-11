@@ -1,7 +1,8 @@
 #include <hyprland/src/managers/input/InputManager.hpp>
 #include <hyprland/src/protocols/LayerShell.hpp>
-#include <hyprland/src/managers/AnimationManager.hpp>
+#include <hyprland/src/managers/animation/AnimationManager.hpp>
 #include <hyprland/src/config/ConfigManager.hpp>
+#include <hyprland/src/Compositor.hpp>
 
 #include "hyprmodoroDecoration.hpp"
 

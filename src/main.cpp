@@ -1,13 +1,13 @@
-#include <hyprlang.hpp>
-#include <src/plugins/PluginAPI.hpp>
+#define WLR_USE_UNSTABLE
+
 #include <hyprland/src/render/Renderer.hpp>
+#include <hyprland/src/Compositor.hpp>
+
 #include <string>
 
 #include "hyprmodoroDecoration.hpp"
 #include "globals.hpp"
 #include "pomodoro.hpp"
-
-#define WLR_USE_UNSTABLE
 
 // Do NOT change this function.
 APICALL EXPORT std::string PLUGIN_API_VERSION() {

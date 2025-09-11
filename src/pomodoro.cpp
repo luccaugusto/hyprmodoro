@@ -1,5 +1,4 @@
 #include "pomodoro.hpp"
-#include <chrono>
 
 Pomodoro::Pomodoro(const int sessionLengthMinutes, const int restLengthMinutes) {
     m_sessionLength = sessionLengthMinutes;

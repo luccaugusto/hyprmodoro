@@ -3,6 +3,7 @@ name = "hyprmodoro"
 authors = ["0xFMD"]
 commit_pins = [
   ["f7aae0b2a7811815ffbab7ab10a4ddaae71e36e1", "348c1624fac6c93f57a06902e7ef2c0775515a73"],    # Hyprland v0.50.1
+  ["df33ca23c42cf387b6d5e8ce91982a559188d91f","46174f78b374b6cea669c48880877a8bdcf7802f"] # Hyprland v0.51.0
 ]
 
 [hyprmodoro]
