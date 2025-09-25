@@ -126,9 +126,10 @@ void HyprmodoroDecoration::onMouseDown(SCallbackInfo& info, IPointer::SButtonEve
 
     static const auto* PSKIPONCLICK = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:text:skip_on_click")->getDataStaticPtr();
 
-    if (m_layout.title.containsPoint(cursorPos) && **PSKIPONCLICK) {
-        HyprlandAPI::addNotification(PHANDLE, std::format("[hyprmodoro] Skipped {}", g_pGlobalState->pomodoroSession->getState() == State::WORKING ? "work" : "rest"),
-                                     CHyprColor{0.0, 1.0, 0.0, 1.0}, 3000);
+    const auto         isRunning = g_pGlobalState->pomodoroSession->getState() == State::WORKING || g_pGlobalState->pomodoroSession->getState() == State::RESTING;
+
+    if (m_layout.title.containsPoint(cursorPos) && **PSKIPONCLICK && isRunning) {
+        HyprlandAPI::addNotification(PHANDLE, std::format("[hyprmodoro] Skipped {}", isRunning ? "work" : "rest"), CHyprColor{0.0, 1.0, 0.0, 1.0}, 3000);
         g_pGlobalState->pomodoroSession->skip();
         return;
     }
