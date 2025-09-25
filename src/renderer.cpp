@@ -37,8 +37,8 @@ void HyprmodoroDecoration::renderTitleBar(PHLMONITOR pMonitor, float alpha) {
     cairo_paint(CAIRO);
     cairo_restore(CAIRO);
 
-    renderTimer(CAIRO, Vector2D(m_layout.container.width, m_layout.container.height));
-    renderButtons(CAIRO, Vector2D(m_layout.container.width, m_layout.container.height));
+    renderTimer(CAIRO, Vector2D(m_layout.container.width, m_layout.container.height), pMonitor->m_scale);
+    renderButtons(CAIRO, Vector2D(m_layout.container.width, m_layout.container.height), pMonitor->m_scale);
 
     cairo_surface_flush(CAIROSURFACE);
     const auto DATA = cairo_image_surface_get_data(CAIROSURFACE);
@@ -59,7 +59,7 @@ void HyprmodoroDecoration::renderTitleBar(PHLMONITOR pMonitor, float alpha) {
     cairo_surface_destroy(CAIROSURFACE);
 }
 
-void HyprmodoroDecoration::renderTimer(cairo_t* cairo, const Vector2D& buffer) {
+void HyprmodoroDecoration::renderTimer(cairo_t* cairo, const Vector2D& buffer, const float& scale) {
     static auto* const PTEXTCOLOR  = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:text:color")->getDataStaticPtr();
     static auto* const PFONT       = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:text:font")->getDataStaticPtr();
     static auto* const PTEXTSIZE   = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:text:size")->getDataStaticPtr();
@@ -67,7 +67,7 @@ void HyprmodoroDecoration::renderTimer(cairo_t* cairo, const Vector2D& buffer) {
     static auto* const PRESTPREFIX = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:text:rest_prefix")->getDataStaticPtr();
     static auto* const PWORKPREFIX = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:text:work_prefix")->getDataStaticPtr();
 
-    const auto         textSize      = **PTEXTSIZE;
+    const auto         textSize      = **PTEXTSIZE * scale;
     const auto         pomodoroState = g_pGlobalState->pomodoroSession->getState();
     const auto         textHover     = **PTEXTHOVER;
     const auto         timeText      = g_pGlobalState->pomodoroSession->getFormattedTime();
@@ -109,7 +109,7 @@ void HyprmodoroDecoration::renderTimer(cairo_t* cairo, const Vector2D& buffer) {
     cairo_pattern_destroy(pattern);
 }
 
-void HyprmodoroDecoration::renderButtons(cairo_t* cairo, const Vector2D& buffer) {
+void HyprmodoroDecoration::renderButtons(cairo_t* cairo, const Vector2D& buffer, const float& scale) {
     static auto* const PFONT              = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:text:font")->getDataStaticPtr();
     static auto* const PBUTTONSIZE        = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:buttons:size")->getDataStaticPtr();
     static auto* const PTEXTSIZE          = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:text:size")->getDataStaticPtr();
@@ -122,9 +122,9 @@ void HyprmodoroDecoration::renderButtons(cairo_t* cairo, const Vector2D& buffer)
     const std::string  PLAYICON          = g_pGlobalState->pomodoroSession->isPaused() || currentState == State::STOPPED ? "⏵" : "⏸";
     m_vButtons[ButtonAction::START].icon = PLAYICON;
 
-    const auto     buttonSize   = **PBUTTONSIZE;
+    const auto     buttonSize   = **PBUTTONSIZE * scale;
     const auto     buttonHover  = **PBUTTONHOVER;
-    const auto     offset       = **PSPACING + **PTEXTSIZE;
+    const auto     offset       = (**PSPACING + **PTEXTSIZE) * scale;
     const auto     spacing      = buttonSize * 1.5f;
     const Vector2D centerCoords = Vector2D(buffer.x / 2, offset + (buttonSize / 2.0f));
 
@@ -207,8 +207,8 @@ void HyprmodoroDecoration::renderProgressBorder(PHLMONITOR pMonitor, float alpha
 
     auto         windowBox = assignedBoxGlobal();
     const auto   PWINDOW   = m_pWindow.lock();
-    const auto   BORDER    = PWINDOW->getRealBorderSize();
-    const auto   ROUNDING  = PWINDOW->rounding();
+    const auto   BORDER    = PWINDOW->getRealBorderSize() * pMonitor->m_scale;
+    const auto   ROUNDING  = PWINDOW->rounding() * pMonitor->m_scale;
 
     const auto   corner       = ROUNDING + BORDER;
     const float  centerBorder = BORDER * 0.5f;

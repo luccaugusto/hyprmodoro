@@ -8,11 +8,13 @@
 
 Vector2D HyprmodoroDecoration::cursorRelativeToContainer() {
     const auto PMONITOR  = m_pWindow.lock()->m_monitor.lock();
-    const auto cursorPos = g_pInputManager->getMouseCoordsInternal() - PMONITOR->m_position;
+    auto       cursorPos = g_pInputManager->getMouseCoordsInternal() - PMONITOR->m_position;
+    cursorPos.x *= PMONITOR->m_scale;
+    cursorPos.y *= PMONITOR->m_scale;
     return cursorPos - m_layout.container.pos();
 }
 
-bool HyprmodoroDecoration::isHoveringTitle(const CBox& windowBox) {
+bool HyprmodoroDecoration::isHoveringTitle(const CBox& windowBox, const float& scale) {
     if (!isValidInput())
         return false;
 
@@ -23,10 +25,10 @@ bool HyprmodoroDecoration::isHoveringTitle(const CBox& windowBox) {
 
     const auto         cursorPos = cursorRelativeToContainer();
 
-    const float        hoverWidth  = windowBox.width * (**PHOVERWIDTH / 100.0f);
-    const float        hoverHeight = windowBox.height * (**PHOVERHEIGHT / 100.0f);
+    const float        hoverWidth  = windowBox.width * scale * (**PHOVERWIDTH / 100.0f);
+    const float        hoverHeight = windowBox.height * scale * (**PHOVERHEIGHT / 100.0f);
 
-    CBox               hoverBox = {(m_layout.container.width - hoverWidth) / 2.0f, (m_layout.container.height - hoverHeight) / 2.0f, hoverWidth, hoverHeight};
+    CBox               hoverBox = CBox((m_layout.container.width - hoverWidth) * 0.5f, -hoverHeight, hoverWidth, (hoverHeight * 2.0f) + m_layout.container.height);
 
     return hoverBox.containsPoint(cursorPos);
 }

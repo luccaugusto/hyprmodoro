@@ -58,11 +58,11 @@ class HyprmodoroDecoration : public IHyprWindowDecoration {
     void                           drawPass(PHLMONITOR, float const& a);
     void                           renderProgressBorder(PHLMONITOR pMonitor, float alpha);
     void                           renderTitleBar(PHLMONITOR pMonitor, float alpha);
-    void                           renderButtons(cairo_t* cairo, const Vector2D& buffer);
-    void                           renderTimer(cairo_t* cairo, const Vector2D& buffer);
+    void                           renderButtons(cairo_t* cairo, const Vector2D& buffer, const float& scale);
+    void                           renderTimer(cairo_t* cairo, const Vector2D& buffer, const float& scale);
     void                           updateHoverOffset();
     Vector2D                       cursorRelativeToContainer();
-    bool                           isHoveringTitle(const CBox& windowBox);
+    bool                           isHoveringTitle(const CBox& windowBox, const float& scale);
     bool                           isValidInput();
     void                           onMouseDown(SCallbackInfo& info, IPointer::SButtonEvent e);
     void                           handleButtonClick(ButtonAction buttonAction);

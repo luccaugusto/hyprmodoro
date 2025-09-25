@@ -221,12 +221,11 @@ void HyprmodoroDecoration::updateWindow(PHLWINDOW pWindow) {
     static auto* const PTITLEALLWINDOWS = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:title:all_windows")->getDataStaticPtr();
     static auto* const PHOVERTITLE      = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:hover:text")->getDataStaticPtr();
     static auto* const PHOVERBUTTONS    = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:hover:buttons")->getDataStaticPtr();
-
-    const auto         PWINDOW     = m_pWindow.lock();
-    const auto         PLASTWINDOW = g_pCompositor->m_lastWindow.lock();
-
-    bool               hoverState     = isHoveringTitle(assignedBoxGlobal());
-    bool               needReposition = false;
+    const auto         PWINDOW          = m_pWindow.lock();
+    const auto         PLASTWINDOW      = g_pCompositor->m_lastWindow.lock();
+    const auto         PMONITOR         = PWINDOW->m_monitor.lock();
+    bool               hoverState       = isHoveringTitle(assignedBoxGlobal(), PMONITOR->m_scale);
+    bool               needReposition   = false;
 
     if (!**PTITLEALLWINDOWS && PWINDOW != PLASTWINDOW) {
         needReposition = true;
