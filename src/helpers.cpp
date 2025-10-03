@@ -139,9 +139,26 @@ bool playSound(const std::string& soundFile, const std::string& player) {
         return false;
     }
     
-    //std::string command = player + " \"" + soundFile + "\" > /dev/null 2>&1 &";
-    std::string command ="echo alou > /tmp/hyprmodoro_sound.txt 2>&1 &";
+    std::string command = player + " \"" + soundFile + "\" > /dev/null 2>&1 &";
+    
+    int result = system(command.c_str());
+    return (result == 0);
+}
 
+bool sendLibnotifyNotification(const std::string& title, const std::string& message) {
+    if (message.empty()) {
+        return false;
+    }
+    
+    // Check if notify-send is available
+    std::string checkCmd = "command -v notify-send > /dev/null 2>&1";
+    if (system(checkCmd.c_str()) != 0) {
+        return false;
+    }
+    
+    // Build notification command
+    // Use app-name for proper categorization and urgency normal
+    std::string command = "notify-send -a 'Hyprmodoro' -u normal '" + title + "' '" + message + "' > /dev/null 2>&1 &";
     
     int result = system(command.c_str());
     return (result == 0);

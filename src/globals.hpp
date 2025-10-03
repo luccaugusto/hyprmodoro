@@ -16,3 +16,4 @@ struct SGlobalState {
 inline UP<SGlobalState> g_pGlobalState;
 
 bool playSound(const std::string& soundFile, const std::string& preferredPlayer);
+bool sendLibnotifyNotification(const std::string& title, const std::string& message);

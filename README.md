@@ -66,9 +66,10 @@ plugin:hyprmodoro:sound:work_end              # Absolute path to sound file for 
 plugin:hyprmodoro:sound:rest_end              # Absolute path to sound file for rest session end (default: empty)
 
 # Notification configurations
-plugin:hyprmodoro:notification:enabled        # Enable desktop notifications (default: true)
-plugin:hyprmodoro:notification:work_end       # Notification message for work end (default: "Work session complete")
-plugin:hyprmodoro:notification:rest_end       # Notification message for rest end (default: "Break is over")
+plugin:hyprmodoro:notification:enabled              # Enable desktop notifications (default: true)
+plugin:hyprmodoro:notification:use_system_notifications  # Use system notifications (notify-send) instead of Hyprland notifications (default: false)
+plugin:hyprmodoro:notification:work_end             # Notification message for work end (default: "Work session complete")
+plugin:hyprmodoro:notification:rest_end             # Notification message for rest end (default: "Break is over")
 
 # Buttons configurations
 plugin:hyprmodoro:buttons:size                # Button size (default: 17)
