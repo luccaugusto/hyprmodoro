@@ -4,6 +4,10 @@
 #include <hyprland/src/config/ConfigManager.hpp>
 #include <hyprland/src/Compositor.hpp>
 
+#include <sys/stat.h>
+#include <unistd.h>
+#include <cstdlib>
+
 #include "hyprmodoroDecoration.hpp"
 
 Vector2D HyprmodoroDecoration::cursorRelativeToContainer() {
@@ -119,4 +123,26 @@ void HyprmodoroDecoration::setupButtons() {
     g_pAnimationManager->createAnimation(Vector2D(0, 0), m_vButtons[ButtonAction::STOP].position, g_pConfigManager->getAnimationPropertyConfig("windowsMove"), AVARDAMAGE_ENTIRE);
     g_pAnimationManager->createAnimation(Vector2D(0, 0), m_vButtons[ButtonAction::RESTART].position, g_pConfigManager->getAnimationPropertyConfig("windowsMove"),
                                          AVARDAMAGE_ENTIRE);
+}
+
+static bool fileExists(const std::string& path) {
+    struct stat buffer;
+    return (stat(path.c_str(), &buffer) == 0);
+}
+
+bool playSound(const std::string& soundFile, const std::string& player) {
+    if (soundFile.empty() || !fileExists(soundFile)) {
+        return false;
+    }
+    
+    if (player.empty()) {
+        return false;
+    }
+    
+    //std::string command = player + " \"" + soundFile + "\" > /dev/null 2>&1 &";
+    std::string command ="echo alou > /tmp/hyprmodoro_sound.txt 2>&1 &";
+
+    
+    int result = system(command.c_str());
+    return (result == 0);
 }

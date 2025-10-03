@@ -150,6 +150,15 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:text:rest_prefix", Hyprlang::STRING{"☕"});
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:text:skip_on_click", Hyprlang::INT{1});
 
+    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:sound:enabled", Hyprlang::INT{0});
+    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:sound:player", Hyprlang::STRING{"pw-play"});
+    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:sound:work_end", Hyprlang::STRING{""});
+    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:sound:rest_end", Hyprlang::STRING{""});
+
+    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:notification:enabled", Hyprlang::INT{1});
+    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:notification:work_end", Hyprlang::STRING{"Work session complete"});
+    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:notification:rest_end", Hyprlang::STRING{"Break is over"});
+
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:buttons:size", Hyprlang::INT{17});
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:buttons:color:foreground", Hyprlang::INT{*configStringToInt("rgba(ffffffff)")});
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:buttons:color:background", Hyprlang::INT{*configStringToInt("rgba(ffffff44)")});
@@ -184,6 +193,34 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     static auto* const RESTLENGTH    = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:rest_duration")->getDataStaticPtr();
 
     g_pGlobalState->pomodoroSession = makeUnique<Pomodoro>(**SESSIONLENGTH, **RESTLENGTH);
+
+    g_pGlobalState->pomodoroSession->setOnSessionEndCallback([](State endedState) {
+        static auto* const PSOUNDENABLED = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:sound:enabled")->getDataStaticPtr();
+        static auto* const PNOTIFENABLED = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:notification:enabled")->getDataStaticPtr();
+        static auto* const PSOUNDPLAYER  = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:sound:player")->getDataStaticPtr();
+        static auto* const PWORKENDFILE  = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:sound:work_end")->getDataStaticPtr();
+        static auto* const PRESTENDFILE  = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:sound:rest_end")->getDataStaticPtr();
+        static auto* const PWORKENDNOTIF = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:notification:work_end")->getDataStaticPtr();
+        static auto* const PRESTENDNOTIF = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:notification:rest_end")->getDataStaticPtr();
+
+        bool soundPlayed = false;
+
+        if (**PSOUNDENABLED) {
+            std::string soundFile = (endedState == State::WORKING) ? std::string(*PWORKENDFILE) : std::string(*PRESTENDFILE);
+            std::string player    = std::string(*PSOUNDPLAYER);
+
+            soundPlayed = playSound(soundFile, player);
+        }
+
+        // Show notification if sound is enabled and didn't play, or notification is enabled
+        if (**PNOTIFENABLED || (**PSOUNDENABLED && !soundPlayed)) {
+            std::string message = (endedState == State::WORKING) ? std::string(*PWORKENDNOTIF) : std::string(*PRESTENDNOTIF);
+
+            CHyprColor color = (endedState == State::WORKING) ? CHyprColor{0.2, 1.0, 0.2, 1.0} : CHyprColor{0.2, 0.6, 1.0, 1.0};
+
+            HyprlandAPI::addNotification(PHANDLE, std::format("[hyprmodoro] {}", message), color, 5000);
+        }
+    });
 
     static auto configReloadCallback = HyprlandAPI::registerCallbackDynamic(PHANDLE, "configReloaded", onConfigReload);
 

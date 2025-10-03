@@ -2,6 +2,7 @@
 
 #include <chrono>
 #include <string>
+#include <functional>
 
 enum State {
     STOPPED,
@@ -36,6 +37,7 @@ class Pomodoro {
     void        setState(State newState);
     void        setSessionLength(int length);
     void        setRestLength(int length);
+    void        setOnSessionEndCallback(std::function<void(State)> callback);
 
   private:
     std::chrono::steady_clock::time_point m_startTime;
@@ -47,4 +49,6 @@ class Pomodoro {
     bool                                  m_pause;
     State                                 m_currentState;
     State                                 m_lastState;
+    
+    std::function<void(State)>            m_onSessionEnd;
 };

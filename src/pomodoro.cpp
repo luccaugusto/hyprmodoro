@@ -139,13 +139,28 @@ bool Pomodoro::isPaused() {
 bool Pomodoro::isFinished() {
     if (getRemainingTime() <= 0 && m_currentState == State::WORKING) {
         this->m_round++;
+        
+        if (m_onSessionEnd) {
+            m_onSessionEnd(State::WORKING);
+        }
+        
         setState(State::FINISHED);
         startRest();
         return true;
     }
+
     if (getRemainingTime() <= 0 && m_currentState == State::RESTING) {
+        if (m_onSessionEnd) {
+            m_onSessionEnd(State::RESTING);
+        }
+        
         start();
         return true;
     }
+    
     return false;
+}
+
+void Pomodoro::setOnSessionEndCallback(std::function<void(State)> callback) {
+    m_onSessionEnd = callback;
 }

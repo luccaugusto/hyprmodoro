@@ -14,3 +14,5 @@ struct SGlobalState {
 };
 
 inline UP<SGlobalState> g_pGlobalState;
+
+bool playSound(const std::string& soundFile, const std::string& preferredPlayer);

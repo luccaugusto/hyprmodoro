@@ -1,6 +1,7 @@
 # Hyprmodoro
 
 A Pomodoro timer plugin for [hyprland](https://github.com/hyprwm/hyprland).
+Fork from https://github.com/0xFMD/hyprmodoro with sound and notifications support.
 
 ![preview](https://github.com/user-attachments/assets/61799c82-f1c5-4d98-b861-3cda51b76134)
 
@@ -14,15 +15,14 @@ hyprpm enable hyprmodoro
 ```
 
 ### Manual
-> [!NOTE] 
+> [!NOTE]
 > [Hyprland headers must be installed first.](https://wiki.hypr.land/Plugins/Using-Plugins/#manual)
 
 ```bash
 git clone https://github.com/0xFMD/hyprmodoro
 cd hyprmodoro
 make all
-hyprctl plugin load hyprmodoro
-
+hyprctl plugin load $(pwd)/hyprmodoro.so
 ```
 
 ## Configuration
@@ -45,7 +45,7 @@ plugin:hyprmodoro:title:floating_window       # Show title on floating windows (
 plugin:hyprmodoro:title:margin                # Margin around title elements (default: 15)
 plugin:hyprmodoro:title:spacing               # Spacing between elements (default: 8)
 
-# Progress border configurations  
+# Progress border configurations
 plugin:hyprmodoro:border:enabled              # Show progress border (default: true)
 plugin:hyprmodoro:border:all_windows          # Show progress border on all windows or only the active window (default: false)
 plugin:hyprmodoro:border:floating_window      # Show progress border on floating windows (default: false)
@@ -58,6 +58,17 @@ plugin:hyprmodoro:text:size                   # Font size (default: 17)
 plugin:hyprmodoro:text:work_prefix            # Prefix for work sessions (default: 🍅)
 plugin:hyprmodoro:text:rest_prefix            # Prefix for rest sessions (default: ☕)
 plugin:hyprmodoro:text:skip_on_click          # Allow skipping a session by clicking the timer (default: true)
+
+# Sound configurations
+# Note: Sounds will ONLY play if player, work_end, and rest_end are all configured
+plugin:hyprmodoro:sound:player                # Audio player command (default: pw-play)
+plugin:hyprmodoro:sound:work_end              # Absolute path to sound file for work session end (default: empty)
+plugin:hyprmodoro:sound:rest_end              # Absolute path to sound file for rest session end (default: empty)
+
+# Notification configurations
+plugin:hyprmodoro:notification:enabled        # Enable desktop notifications (default: true)
+plugin:hyprmodoro:notification:work_end       # Notification message for work end (default: "Work session complete")
+plugin:hyprmodoro:notification:rest_end       # Notification message for rest end (default: "Break is over")
 
 # Buttons configurations
 plugin:hyprmodoro:buttons:size                # Button size (default: 17)
