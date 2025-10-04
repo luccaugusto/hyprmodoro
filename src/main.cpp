@@ -246,14 +246,14 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
             sendNotification(message, color);
         }
 
-        // Execute custom commands
+        // custom callback execution
         const std::string& exec_commands = (endedState == State::WORKING) ? *PEXECWORKEND : *PEXECRESTEND;
 
         if (!exec_commands.empty()) {
             std::stringstream ss(exec_commands);
             std::string       command;
             while (std::getline(ss, command, ';')) {
-                // Trim leading/trailing whitespace from the command
+                // Trim leading/trailing whitespace
                 command.erase(0, command.find_first_not_of(" \t\n\r"));
                 command.erase(command.find_last_not_of(" \t\n\r") + 1);
                 if (!command.empty()) {
