@@ -125,6 +125,22 @@ void HyprmodoroDecoration::setupButtons() {
                                          AVARDAMAGE_ENTIRE);
 }
 
+void sendNotification(const std::string& message, const CHyprColor& color) {
+    static auto* const PNOTIFENABLED =
+        (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:notification:enabled")->getDataStaticPtr();
+    if (!**PNOTIFENABLED)
+        return;
+
+    static auto* const PUSESYSNOTIF =
+        (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:notification:use_system_notifications")->getDataStaticPtr();
+
+    if (**PUSESYSNOTIF) {
+        sendLibnotifyNotification("Hyprmodoro", message);
+    } else {
+        HyprlandAPI::addNotification(PHANDLE, std::format("[hyprmodoro] {}", message), color, 5000);
+    }
+}
+
 static bool fileExists(const std::string& path) {
     struct stat buffer;
     return (stat(path.c_str(), &buffer) == 0);

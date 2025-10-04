@@ -114,12 +114,12 @@ void onWindowClose(void* self, std::any data) {
 bool getEffectiveAutoTransition() {
     static auto* const PAUTOTRANSITION = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:auto_transition")->getDataStaticPtr();
     static auto* const PTITLEENABLED   = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:title:enabled")->getDataStaticPtr();
-    
+
     bool autoTransition = **PAUTOTRANSITION;
     if (!**PTITLEENABLED) {
         autoTransition = true;
     }
-    
+
     return autoTransition;
 }
 
@@ -210,12 +210,11 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     static auto* const RESTLENGTH    = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:rest_duration")->getDataStaticPtr();
 
     g_pGlobalState->pomodoroSession = makeUnique<Pomodoro>(**SESSIONLENGTH, **RESTLENGTH);
-    
+
     // Apply autoTransition setting with safety check
     g_pGlobalState->pomodoroSession->setAutoTransition(getEffectiveAutoTransition());
 
     g_pGlobalState->pomodoroSession->setOnSessionEndCallback([](State endedState) {
-        static auto* const PNOTIFENABLED  = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:notification:enabled")->getDataStaticPtr();
         static auto* const PUSESYSNOTIF   = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:notification:use_system_notifications")->getDataStaticPtr();
         static auto* const PSOUNDPLAYER   = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:sound:player")->getDataStaticPtr();
         static auto* const PWORKENDFILE   = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:sound:work_end")->getDataStaticPtr();
@@ -238,15 +237,8 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
         // Show notification if enabled, or as fallback if sound was configured but failed to play
         if (**PNOTIFENABLED || (soundConfigured && !soundPlayed)) {
             std::string message = (endedState == State::WORKING) ? std::string(*PWORKENDNOTIF) : std::string(*PRESTENDNOTIF);
-
-            // Use system notifications (libnotify) if enabled, otherwise use Hyprland notification
-            if (**PUSESYSNOTIF) {
-                std::string title = "Hyprmodoro";
-                sendLibnotifyNotification(title, message);
-            } else {
-                CHyprColor color = (endedState == State::WORKING) ? CHyprColor{0.2, 1.0, 0.2, 1.0} : CHyprColor{0.2, 0.6, 1.0, 1.0};
-                HyprlandAPI::addNotification(PHANDLE, std::format("[hyprmodoro] {}", message), color, 5000);
-            }
+            CHyprColor  color   = (endedState == State::WORKING) ? CHyprColor{0.2, 1.0, 0.2, 1.0} : CHyprColor{0.2, 0.6, 1.0, 1.0};
+            sendNotification(message, color);
         }
     });
 

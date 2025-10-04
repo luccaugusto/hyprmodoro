@@ -133,21 +133,21 @@ void HyprmodoroDecoration::onMouseDown(SCallbackInfo& info, IPointer::SButtonEve
         // If waiting for rest, start rest session
         if (currentState == State::WAITING_FOR_REST) {
             g_pGlobalState->pomodoroSession->startRest();
-            HyprlandAPI::addNotification(PHANDLE, "[hyprmodoro] Starting rest", CHyprColor{0.0, 1.0, 0.0, 1.0}, 3000);
+            sendNotification("Starting rest", CHyprColor{0.0, 1.0, 0.0, 1.0});
             return;
         }
         
         // If waiting for work, start work session
         if (currentState == State::WAITING_FOR_WORK) {
             g_pGlobalState->pomodoroSession->start();
-            HyprlandAPI::addNotification(PHANDLE, "[hyprmodoro] Starting work", CHyprColor{0.0, 1.0, 0.0, 1.0}, 3000);
+            sendNotification("Starting work", CHyprColor{0.0, 1.0, 0.0, 1.0});
             return;
         }
         
         // If session is running, allow skip
         if (isRunning) {
             const std::string sessionType = (currentState == State::WORKING) ? "work" : "rest";
-            HyprlandAPI::addNotification(PHANDLE, std::format("[hyprmodoro] Skipped {}", sessionType), CHyprColor{0.0, 1.0, 0.0, 1.0}, 3000);
+            sendNotification(std::format("Skipped {}", sessionType), CHyprColor{0.0, 1.0, 0.0, 1.0});
             g_pGlobalState->pomodoroSession->skip();
             return;
         }
