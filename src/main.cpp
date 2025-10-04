@@ -75,7 +75,7 @@ std::string getTime(eHyprCtlOutputFormat, std::string) {
 std::string getState(eHyprCtlOutputFormat, std::string) {
     if (!g_pGlobalState->pomodoroSession)
         return std::string("STOPPED");
-    const std::string states[] = {"STOPPED", "WORKING", "RESTING", "FINISHED"};
+    const std::string states[] = {"STOPPED", "WORKING", "RESTING", "FINISHED", "WAITING_FOR_REST", "WAITING_FOR_WORK"};
     return states[g_pGlobalState->pomodoroSession->getState()];
 }
 
@@ -109,6 +109,20 @@ void onWindowClose(void* self, std::any data) {
     }
 }
 
+// Safety check: if title is disabled, auto-transition must be enabled
+// Otherwise user has no way to manually transition (no timer to click)
+bool getEffectiveAutoTransition() {
+    static auto* const PAUTOTRANSITION = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:auto_transition")->getDataStaticPtr();
+    static auto* const PTITLEENABLED   = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:title:enabled")->getDataStaticPtr();
+    
+    bool autoTransition = **PAUTOTRANSITION;
+    if (!**PTITLEENABLED) {
+        autoTransition = true;
+    }
+    
+    return autoTransition;
+}
+
 void onConfigReload(void* self, SCallbackInfo& info, std::any data) {
     static auto* const SESSIONLENGTH = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:work_duration")->getDataStaticPtr();
     static auto* const RESTLENGTH    = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:rest_duration")->getDataStaticPtr();
@@ -116,6 +130,7 @@ void onConfigReload(void* self, SCallbackInfo& info, std::any data) {
     if (g_pGlobalState->pomodoroSession) {
         g_pGlobalState->pomodoroSession->setSessionLength(**SESSIONLENGTH);
         g_pGlobalState->pomodoroSession->setRestLength(**RESTLENGTH);
+        g_pGlobalState->pomodoroSession->setAutoTransition(getEffectiveAutoTransition());
     }
 }
 
@@ -137,6 +152,7 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:enabled", Hyprlang::INT{1});
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:work_duration", Hyprlang::INT{25});
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:rest_duration", Hyprlang::INT{5});
+    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:auto_transition", Hyprlang::INT{1});
 
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:border:enabled", Hyprlang::INT{1});
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:border:floating_window", Hyprlang::INT{0});
@@ -148,6 +164,7 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:text:size", Hyprlang::INT{17});
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:text:work_prefix", Hyprlang::STRING{"🍅"});
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:text:rest_prefix", Hyprlang::STRING{"☕"});
+    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:text:waiting_prefix", Hyprlang::STRING{"⏸"});
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:text:skip_on_click", Hyprlang::INT{1});
 
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:sound:player", Hyprlang::STRING{"pw-play"});
@@ -193,6 +210,9 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     static auto* const RESTLENGTH    = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:rest_duration")->getDataStaticPtr();
 
     g_pGlobalState->pomodoroSession = makeUnique<Pomodoro>(**SESSIONLENGTH, **RESTLENGTH);
+    
+    // Apply autoTransition setting with safety check
+    g_pGlobalState->pomodoroSession->setAutoTransition(getEffectiveAutoTransition());
 
     g_pGlobalState->pomodoroSession->setOnSessionEndCallback([](State endedState) {
         static auto* const PNOTIFENABLED  = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:notification:enabled")->getDataStaticPtr();

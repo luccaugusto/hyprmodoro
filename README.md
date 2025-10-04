@@ -37,6 +37,10 @@ plugin:hyprmodoro:enabled                     # (default: true)
 plugin:hyprmodoro:work_duration               # Work session length (default: 25)
 plugin:hyprmodoro:rest_duration               # Rest session length (default: 5)
 
+# Auto-transition between sessions
+plugin:hyprmodoro:auto_transition             # Automatically transition between work/rest (default: true)
+                                              # Note: Forced to true if title:enabled is false
+
 # Title configurations
 plugin:hyprmodoro:title:enabled               # Show timer on window title bars (default: true)
 plugin:hyprmodoro:title:all_windows           # Show title on all windows or only the active window (default: false)

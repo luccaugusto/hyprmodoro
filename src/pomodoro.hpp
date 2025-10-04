@@ -8,7 +8,9 @@ enum State {
     STOPPED,
     WORKING,
     RESTING,
-    FINISHED
+    FINISHED,
+    WAITING_FOR_REST,
+    WAITING_FOR_WORK
 };
 
 class Pomodoro {
@@ -38,6 +40,8 @@ class Pomodoro {
     void        setSessionLength(int length);
     void        setRestLength(int length);
     void        setOnSessionEndCallback(std::function<void(State)> callback);
+    void        setAutoTransition(bool autoTransition);
+    bool        getAutoTransition() const;
 
   private:
     std::chrono::steady_clock::time_point m_startTime;
@@ -47,6 +51,7 @@ class Pomodoro {
     int                                   m_sessionLength;
     int                                   m_restLength;
     bool                                  m_pause;
+    bool                                  m_autoTransition;
     State                                 m_currentState;
     State                                 m_lastState;
     

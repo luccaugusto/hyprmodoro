@@ -1,13 +1,14 @@
 #include "pomodoro.hpp"
 
 Pomodoro::Pomodoro(const int sessionLengthMinutes, const int restLengthMinutes) {
-    m_sessionLength = sessionLengthMinutes;
-    m_restLength    = restLengthMinutes;
-    m_progress      = 0.0f;
-    m_round         = 0;
-    m_currentState  = State::STOPPED;
-    m_lastState     = State::STOPPED;
-    m_pause         = false;
+    m_sessionLength  = sessionLengthMinutes;
+    m_restLength     = restLengthMinutes;
+    m_progress       = 0.0f;
+    m_round          = 0;
+    m_currentState   = State::STOPPED;
+    m_lastState      = State::STOPPED;
+    m_pause          = false;
+    m_autoTransition = true;
 }
 
 Pomodoro::~Pomodoro() {
@@ -101,8 +102,11 @@ float Pomodoro::getProgress() {
 }
 
 int Pomodoro::getRemainingTime() const {
-    if (m_currentState == State::STOPPED)
+    if (m_currentState == State::STOPPED ||
+        m_currentState == State::WAITING_FOR_REST ||
+        m_currentState == State::WAITING_FOR_WORK)
         return 0;
+
     auto      now      = std::chrono::steady_clock::now();
     auto      elapsed  = std::chrono::duration_cast<std::chrono::milliseconds>(m_pause ? m_pausedTime - m_startTime : now - m_startTime).count();
     const int lengthMS = (m_currentState == State::WORKING ? m_sessionLength : m_restLength) * 60 * 1000;
@@ -139,13 +143,17 @@ bool Pomodoro::isPaused() {
 bool Pomodoro::isFinished() {
     if (getRemainingTime() <= 0 && m_currentState == State::WORKING) {
         this->m_round++;
-        
+
         if (m_onSessionEnd) {
             m_onSessionEnd(State::WORKING);
         }
-        
-        setState(State::FINISHED);
-        startRest();
+
+        if (m_autoTransition) {
+            startRest();
+        } else {
+            setState(State::WAITING_FOR_REST);
+            Pomodoro::pause();
+        }
         return true;
     }
 
@@ -153,14 +161,27 @@ bool Pomodoro::isFinished() {
         if (m_onSessionEnd) {
             m_onSessionEnd(State::RESTING);
         }
-        
-        start();
+
+        if (m_autoTransition) {
+            start();
+        } else {
+            setState(State::WAITING_FOR_WORK);
+            Pomodoro::pause();
+        }
         return true;
     }
-    
+
     return false;
 }
 
 void Pomodoro::setOnSessionEndCallback(std::function<void(State)> callback) {
     m_onSessionEnd = callback;
+}
+
+void Pomodoro::setAutoTransition(bool autoTransition) {
+    m_autoTransition = autoTransition;
+}
+
+bool Pomodoro::getAutoTransition() const {
+    return m_autoTransition;
 }

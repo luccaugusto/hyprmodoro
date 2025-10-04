@@ -126,12 +126,31 @@ void HyprmodoroDecoration::onMouseDown(SCallbackInfo& info, IPointer::SButtonEve
 
     static const auto* PSKIPONCLICK = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:text:skip_on_click")->getDataStaticPtr();
 
-    const auto         isRunning = g_pGlobalState->pomodoroSession->getState() == State::WORKING || g_pGlobalState->pomodoroSession->getState() == State::RESTING;
+    const auto         currentState = g_pGlobalState->pomodoroSession->getState();
+    const auto         isRunning    = currentState == State::WORKING || currentState == State::RESTING;
 
-    if (m_layout.title.containsPoint(cursorPos) && **PSKIPONCLICK && isRunning) {
-        HyprlandAPI::addNotification(PHANDLE, std::format("[hyprmodoro] Skipped {}", isRunning ? "work" : "rest"), CHyprColor{0.0, 1.0, 0.0, 1.0}, 3000);
-        g_pGlobalState->pomodoroSession->skip();
-        return;
+    if (m_layout.title.containsPoint(cursorPos) && **PSKIPONCLICK) {
+        // If waiting for rest, start rest session
+        if (currentState == State::WAITING_FOR_REST) {
+            g_pGlobalState->pomodoroSession->startRest();
+            HyprlandAPI::addNotification(PHANDLE, "[hyprmodoro] Starting rest", CHyprColor{0.0, 1.0, 0.0, 1.0}, 3000);
+            return;
+        }
+        
+        // If waiting for work, start work session
+        if (currentState == State::WAITING_FOR_WORK) {
+            g_pGlobalState->pomodoroSession->start();
+            HyprlandAPI::addNotification(PHANDLE, "[hyprmodoro] Starting work", CHyprColor{0.0, 1.0, 0.0, 1.0}, 3000);
+            return;
+        }
+        
+        // If session is running, allow skip
+        if (isRunning) {
+            const std::string sessionType = (currentState == State::WORKING) ? "work" : "rest";
+            HyprlandAPI::addNotification(PHANDLE, std::format("[hyprmodoro] Skipped {}", sessionType), CHyprColor{0.0, 1.0, 0.0, 1.0}, 3000);
+            g_pGlobalState->pomodoroSession->skip();
+            return;
+        }
     }
 
     for (const auto& [buttonAction, button] : m_vButtons) {

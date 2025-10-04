@@ -60,19 +60,28 @@ void HyprmodoroDecoration::renderTitleBar(PHLMONITOR pMonitor, float alpha) {
 }
 
 void HyprmodoroDecoration::renderTimer(cairo_t* cairo, const Vector2D& buffer, const float& scale) {
-    static auto* const PTEXTCOLOR  = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:text:color")->getDataStaticPtr();
-    static auto* const PFONT       = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:text:font")->getDataStaticPtr();
-    static auto* const PTEXTSIZE   = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:text:size")->getDataStaticPtr();
-    static auto* const PTEXTHOVER  = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:hover:text")->getDataStaticPtr();
-    static auto* const PRESTPREFIX = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:text:rest_prefix")->getDataStaticPtr();
-    static auto* const PWORKPREFIX = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:text:work_prefix")->getDataStaticPtr();
+    static auto* const PTEXTCOLOR     = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:text:color")->getDataStaticPtr();
+    static auto* const PFONT          = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:text:font")->getDataStaticPtr();
+    static auto* const PTEXTSIZE      = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:text:size")->getDataStaticPtr();
+    static auto* const PTEXTHOVER     = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:hover:text")->getDataStaticPtr();
+    static auto* const PRESTPREFIX    = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:text:rest_prefix")->getDataStaticPtr();
+    static auto* const PWORKPREFIX    = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:text:work_prefix")->getDataStaticPtr();
+    static auto* const PWAITINGPREFIX = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:text:waiting_prefix")->getDataStaticPtr();
 
     const auto         textSize      = **PTEXTSIZE * scale;
     const auto         pomodoroState = g_pGlobalState->pomodoroSession->getState();
     const auto         textHover     = **PTEXTHOVER;
     const auto         timeText      = g_pGlobalState->pomodoroSession->getFormattedTime();
 
-    const std::string  displayText = pomodoroState == State::RESTING ? std::string(*PRESTPREFIX) + " " + timeText : std::string(*PWORKPREFIX) + " " + timeText;
+    std::string displayText;
+    if (pomodoroState == State::RESTING) {
+        displayText = std::string(*PRESTPREFIX) + " " + timeText;
+    } else if (pomodoroState == State::WAITING_FOR_REST || pomodoroState == State::WAITING_FOR_WORK) {
+        displayText = std::string(*PWAITINGPREFIX) + " " + timeText;
+    } else {
+        displayText = std::string(*PWORKPREFIX) + " " + timeText;
+    }
+    
     CHyprColor         textColor   = CHyprColor((uint64_t)**PTEXTCOLOR);
 
     if (pomodoroState == State::STOPPED)
