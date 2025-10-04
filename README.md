@@ -75,6 +75,10 @@ plugin:hyprmodoro:notification:use_system_notifications  # Use system notificati
 plugin:hyprmodoro:notification:work_end             # Notification message for work end (default: "Work session complete")
 plugin:hyprmodoro:notification:rest_end             # Notification message for rest end (default: "Break is over")
 
+# Custom Commands
+plugin:hyprmodoro:exec_on_work_end           # Semicolon-separated list of commands to execute on work session end (default: empty) example: "$TERMINAL -c 'echo Hello World'; firefox"
+plugin:hyprmodoro:exec_on_rest_end           # Semicolon-separated list of commands to execute on rest session end (default: empty)
+
 # Buttons configurations
 plugin:hyprmodoro:buttons:size                # Button size (default: 17)
 plugin:hyprmodoro:buttons:color:foreground    # Button text color (default: rgba(ffffffff))

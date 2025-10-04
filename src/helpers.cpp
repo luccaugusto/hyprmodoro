@@ -141,24 +141,29 @@ void sendNotification(const std::string& message, const CHyprColor& color) {
     }
 }
 
+
+bool executeCommand(const std::string& command) {
+    if (command.empty()) {
+        return false;
+    }
+
+    std::string commandWithBg = command + " &";
+    int result = system(commandWithBg.c_str());
+    return result == 0;
+}
+
 static bool fileExists(const std::string& path) {
     struct stat buffer;
     return (stat(path.c_str(), &buffer) == 0);
 }
 
 bool playSound(const std::string& soundFile, const std::string& player) {
-    if (soundFile.empty() || !fileExists(soundFile)) {
+    if (soundFile.empty() || !fileExists(soundFile) || player.empty()) {
         return false;
     }
-    
-    if (player.empty()) {
-        return false;
-    }
-    
-    std::string command = player + " \"" + soundFile + "\" > /dev/null 2>&1 &";
-    
-    int result = system(command.c_str());
-    return (result == 0);
+
+    std::string command = player + " \"" + soundFile + "\" > /dev/null 2>&1";
+    return executeCommand(command);
 }
 
 bool sendLibnotifyNotification(const std::string& title, const std::string& message) {

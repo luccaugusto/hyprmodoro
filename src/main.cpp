@@ -176,6 +176,9 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:notification:work_end", Hyprlang::STRING{"Work session complete"});
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:notification:rest_end", Hyprlang::STRING{"Break is over"});
 
+    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:exec_on_work_end", Hyprlang::STRING{""});
+    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:exec_on_rest_end", Hyprlang::STRING{""});
+
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:buttons:size", Hyprlang::INT{17});
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:buttons:color:foreground", Hyprlang::INT{*configStringToInt("rgba(ffffffff)")});
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:buttons:color:background", Hyprlang::INT{*configStringToInt("rgba(ffffff44)")});
@@ -221,10 +224,12 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
         static auto* const PRESTENDFILE   = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:sound:rest_end")->getDataStaticPtr();
         static auto* const PWORKENDNOTIF  = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:notification:work_end")->getDataStaticPtr();
         static auto* const PRESTENDNOTIF  = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:notification:rest_end")->getDataStaticPtr();
+        static auto* const PNOTIFENABLED  = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:notification:enabled")->getDataStaticPtr();
+        static auto* const PEXECWORKEND   = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:exec_on_work_end")->getDataStaticPtr();
+        static auto* const PEXECRESTEND   = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:exec_on_rest_end")->getDataStaticPtr();
 
         bool soundPlayed      = false;
         bool soundConfigured  = false;
-
         // Try to play sound if player and sound files are configured
         std::string soundFile = (endedState == State::WORKING) ? std::string(*PWORKENDFILE) : std::string(*PRESTENDFILE);
         std::string player    = std::string(*PSOUNDPLAYER);
@@ -239,6 +244,22 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
             std::string message = (endedState == State::WORKING) ? std::string(*PWORKENDNOTIF) : std::string(*PRESTENDNOTIF);
             CHyprColor  color   = (endedState == State::WORKING) ? CHyprColor{0.2, 1.0, 0.2, 1.0} : CHyprColor{0.2, 0.6, 1.0, 1.0};
             sendNotification(message, color);
+        }
+
+        // Execute custom commands
+        const std::string& exec_commands = (endedState == State::WORKING) ? *PEXECWORKEND : *PEXECRESTEND;
+
+        if (!exec_commands.empty()) {
+            std::stringstream ss(exec_commands);
+            std::string       command;
+            while (std::getline(ss, command, ';')) {
+                // Trim leading/trailing whitespace from the command
+                command.erase(0, command.find_first_not_of(" \t\n\r"));
+                command.erase(command.find_last_not_of(" \t\n\r") + 1);
+                if (!command.empty()) {
+                    executeCommand(command);
+                }
+            }
         }
     });
 
