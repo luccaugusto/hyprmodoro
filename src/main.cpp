@@ -219,7 +219,6 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     g_pGlobalState->pomodoroSession->setAutoTransition(getEffectiveAutoTransition());
 
     g_pGlobalState->pomodoroSession->setOnSessionEndCallback([](State endedState) {
-        static auto* const PUSESYSNOTIF   = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:notification:use_system_notifications")->getDataStaticPtr();
         static auto* const PSOUNDPLAYER   = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:sound:player")->getDataStaticPtr();
         static auto* const PWORKENDFILE   = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:sound:work_end")->getDataStaticPtr();
         static auto* const PRESTENDFILE   = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:sound:rest_end")->getDataStaticPtr();
@@ -241,7 +240,7 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
         }
 
         // Show notification if enabled, or as fallback if sound was configured but failed to play
-        if (**PNOTIFENABLED || (soundConfigured && !soundPlayed)) {
+        if (*PNOTIFENABLED || (soundConfigured && !soundPlayed)) {
             std::string message = (endedState == State::WORKING) ? std::string(*PWORKENDNOTIF) : std::string(*PRESTENDNOTIF);
             CHyprColor  color   = (endedState == State::WORKING) ? CHyprColor{0.2, 1.0, 0.2, 1.0} : CHyprColor{0.2, 0.6, 1.0, 1.0};
             sendNotification(message, color);

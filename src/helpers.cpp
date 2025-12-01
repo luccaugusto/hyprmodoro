@@ -7,6 +7,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <cstdlib>
+#include <format>
 
 #include "hyprmodoroDecoration.hpp"
 
@@ -125,20 +126,24 @@ void HyprmodoroDecoration::setupButtons() {
                                          AVARDAMAGE_ENTIRE);
 }
 
+// Sends a notification using the configured method
+// Tries system notifications first if enabled, falls back to Hyprland API if they fail
 void sendNotification(const std::string& message, const CHyprColor& color) {
-    static auto* const PNOTIFENABLED =
-        (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:notification:enabled")->getDataStaticPtr();
-    if (!**PNOTIFENABLED)
-        return;
-
     static auto* const PUSESYSNOTIF =
         (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:notification:use_system_notifications")->getDataStaticPtr();
 
+    bool notificationSent = false;
+
+    // Try system notifications if configured
     if (**PUSESYSNOTIF) {
-        sendLibnotifyNotification("Hyprmodoro", message);
-    } else {
-        HyprlandAPI::addNotification(PHANDLE, std::format("[hyprmodoro] {}", message), color, 5000);
+        notificationSent = sendLibnotifyNotification("Hyprmodoro", message);
+        // Fall back to Hyprland API notifications
+        if (!notificationSent) {
+            HyprlandAPI::addNotification(PHANDLE, std::format("[hyprmodoro] {}", message), color, 5000);
+        }
     }
+
+
 }
 
 
@@ -166,6 +171,23 @@ bool playSound(const std::string& soundFile, const std::string& player) {
     return executeCommand(command);
 }
 
+// Helper function to escape shell arguments
+// Replaces single quotes with '\'' to safely pass arguments to shell
+static std::string escapeShellArg(const std::string& arg) {
+    std::string escaped;
+    for (char c : arg) {
+        if (c == '\'') {
+            // End quote, add escaped quote, start new quote
+            escaped += "'\\''";
+        } else {
+            escaped += c;
+        }
+    }
+    return escaped;
+}
+
+// Sends a notification via libnotify (notify-send)
+// Returns true if successful, false otherwise
 bool sendLibnotifyNotification(const std::string& title, const std::string& message) {
     if (message.empty()) {
         return false;
@@ -177,9 +199,11 @@ bool sendLibnotifyNotification(const std::string& title, const std::string& mess
         return false;
     }
     
-    // Build notification command
+    // Build notification command with proper escaping
     // Use app-name for proper categorization and urgency normal
-    std::string command = "notify-send -a 'Hyprmodoro' -u normal '" + title + "' '" + message + "' > /dev/null 2>&1 &";
+    std::string escapedTitle = escapeShellArg(title);
+    std::string escapedMessage = escapeShellArg(message);
+    std::string command = "notify-send -a 'Hyprmodoro' -u normal '" + escapedTitle + "' '" + escapedMessage + "' 2>&1";
     
     int result = system(command.c_str());
     return (result == 0);
