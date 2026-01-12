@@ -7,7 +7,6 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <cstdlib>
-#include <format>
 
 #include "hyprmodoroDecoration.hpp"
 
@@ -142,8 +141,6 @@ void sendNotification(const std::string& message, const CHyprColor& color) {
             HyprlandAPI::addNotification(PHANDLE, std::format("[hyprmodoro] {}", message), color, 5000);
         }
     }
-
-
 }
 
 
@@ -192,19 +189,19 @@ bool sendLibnotifyNotification(const std::string& title, const std::string& mess
     if (message.empty()) {
         return false;
     }
-    
+
     // Check if notify-send is available
     std::string checkCmd = "command -v notify-send > /dev/null 2>&1";
     if (system(checkCmd.c_str()) != 0) {
         return false;
     }
-    
+
     // Build notification command with proper escaping
     // Use app-name for proper categorization and urgency normal
     std::string escapedTitle = escapeShellArg(title);
     std::string escapedMessage = escapeShellArg(message);
     std::string command = "notify-send -a 'Hyprmodoro' -u normal '" + escapedTitle + "' '" + escapedMessage + "' 2>&1";
-    
+
     int result = system(command.c_str());
     return (result == 0);
 }
