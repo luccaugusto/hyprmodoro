@@ -2,6 +2,7 @@
 #include <hyprland/src/render/Renderer.hpp>
 #include <hyprland/src/managers/animation/AnimationManager.hpp>
 #include <hyprland/src/config/ConfigManager.hpp>
+#include <hyprland/src/desktop/state/FocusState.hpp>
 
 #include "hyprmodoroDecoration.hpp"
 #include "HyprmodoroPassElement.hpp"
@@ -50,7 +51,7 @@ SDecorationPositioningInfo HyprmodoroDecoration::getPositioningInfo() {
         return info;
 
     const auto PWINDOW     = m_pWindow.lock();
-    const auto PLASTWINDOW = g_pCompositor->m_lastWindow.lock();
+    const auto PLASTWINDOW = Desktop::focusState()->window();
 
     if (!**PRESERVESPACEALL && !**PTITLEALLWINDOWS && PWINDOW != PLASTWINDOW) // only focused windows
         return info;
@@ -185,7 +186,7 @@ void HyprmodoroDecoration::draw(PHLMONITOR pMonitor, const float& a) {
 
     const auto PWINDOW = m_pWindow.lock();
 
-    if (!PWINDOW->m_windowData.decorate.valueOrDefault())
+    if (!PWINDOW->m_ruleApplicator->decorate().valueOrDefault())
         return;
 
     if (!PWINDOW->m_workspace->isVisible() || PWINDOW->isHidden())
@@ -215,7 +216,7 @@ void HyprmodoroDecoration::drawPass(PHLMONITOR pMonitor, const float& a) {
 
     const auto SESSIONPROGRESS = g_pGlobalState->pomodoroSession->getProgress();
     const auto PWINDOW         = m_pWindow.lock();
-    const auto PLASTWINDOW     = g_pCompositor->m_lastWindow.lock();
+    const auto PLASTWINDOW     = Desktop::focusState()->window();
     if (**PBORDERENABLED && SESSIONPROGRESS <= 1.0f && SESSIONPROGRESS > 0.0f) {
         if (**PBORDERALLWINDOWS || PWINDOW == PLASTWINDOW) {
             renderProgressBorder(pMonitor, a);
@@ -242,7 +243,7 @@ void HyprmodoroDecoration::updateWindow(PHLWINDOW pWindow) {
     static auto* const PHOVERTITLE      = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:hover:text")->getDataStaticPtr();
     static auto* const PHOVERBUTTONS    = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:hover:buttons")->getDataStaticPtr();
     const auto         PWINDOW          = m_pWindow.lock();
-    const auto         PLASTWINDOW      = g_pCompositor->m_lastWindow.lock();
+    const auto         PLASTWINDOW      = Desktop::focusState()->window();
     const auto         PMONITOR         = PWINDOW->m_monitor.lock();
     bool               hoverState       = isHoveringTitle(assignedBoxGlobal(), PMONITOR->m_scale);
     bool               needReposition   = false;
