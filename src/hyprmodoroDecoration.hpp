@@ -4,6 +4,7 @@
 
 #include <hyprland/src/render/decorations/IHyprWindowDecoration.hpp>
 #include <hyprland/src/devices/IPointer.hpp>
+#include <hyprland/src/event/EventBus.hpp>
 
 #include "HyprmodoroPassElement.hpp"
 #include "globals.hpp"
@@ -30,7 +31,7 @@ struct Button {
     PHLANIMVAR<Vector2D> position = nullptr;
 };
 
-struct Layout {
+struct DecorLayout {
     CBox container;
     CBox title;
 };
@@ -64,7 +65,7 @@ class HyprmodoroDecoration : public IHyprWindowDecoration {
     Vector2D                       cursorRelativeToContainer();
     bool                           isHoveringTitle(const CBox& windowBox, const float& scale);
     bool                           isValidInput();
-    void                           onMouseDown(SCallbackInfo& info, IPointer::SButtonEvent e);
+    void                           onMouseDown(Event::SCallbackInfo& info, IPointer::SButtonEvent e);
     void                           handleButtonClick(ButtonAction buttonAction);
 
     CBox                           m_bAssignedGeometry;
@@ -72,7 +73,7 @@ class HyprmodoroDecoration : public IHyprWindowDecoration {
     SP<CTexture>                   m_pTitleTex;
     SP<CTexture>                   m_pProgressTex;
 
-    Layout                         m_layout;
+    DecorLayout                    m_layout;
     std::map<ButtonAction, Button> m_vButtons;
 
     bool                           m_isNearContainer = false;
@@ -80,7 +81,7 @@ class HyprmodoroDecoration : public IHyprWindowDecoration {
     PHLANIMVAR<float>              m_hoverOffset = nullptr;
     PHLANIMVAR<float>              m_textOpacity = nullptr;
 
-    SP<HOOK_CALLBACK_FN>           m_pMouseButtonCallback;
+    CHyprSignalListener            m_pMouseButtonCallback;
 
     friend class HyprmodoroPassElement;
 };

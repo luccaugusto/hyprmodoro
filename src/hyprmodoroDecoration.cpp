@@ -13,8 +13,7 @@ HyprmodoroDecoration::HyprmodoroDecoration(PHLWINDOW pWindow) : IHyprWindowDecor
     m_pProgressTex = makeShared<CTexture>();
     setupButtons();
 
-    m_pMouseButtonCallback = HyprlandAPI::registerCallbackDynamic(
-        PHANDLE, "mouseButton", [&](void* self, SCallbackInfo& info, std::any param) { onMouseDown(info, std::any_cast<IPointer::SButtonEvent>(param)); });
+    m_pMouseButtonCallback = Event::bus()->m_events.input.mouse.button.listen([this](IPointer::SButtonEvent e, Event::SCallbackInfo& info) { onMouseDown(info, e); });
 
     g_pAnimationManager->createAnimation(25.0f, m_hoverOffset, g_pConfigManager->getAnimationPropertyConfig("windowsMove"), AVARDAMAGE_ENTIRE);
     g_pAnimationManager->createAnimation(0.0f, m_textOpacity, g_pConfigManager->getAnimationPropertyConfig("fadeOut"), AVARDAMAGE_ENTIRE);
@@ -116,7 +115,7 @@ CBox HyprmodoroDecoration::assignedBoxGlobal() {
     return box.translate(WORKSPACEOFFSET);
 }
 
-void HyprmodoroDecoration::onMouseDown(SCallbackInfo& info, IPointer::SButtonEvent e) {
+void HyprmodoroDecoration::onMouseDown(Event::SCallbackInfo& info, IPointer::SButtonEvent e) {
     if (!isValidInput())
         return;
 

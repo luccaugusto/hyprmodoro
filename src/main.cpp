@@ -2,6 +2,7 @@
 
 #include <hyprland/src/render/Renderer.hpp>
 #include <hyprland/src/Compositor.hpp>
+#include <hyprland/src/event/EventBus.hpp>
 
 #include <string>
 
@@ -123,7 +124,7 @@ bool getEffectiveAutoTransition() {
     return autoTransition;
 }
 
-void onConfigReload(void* self, SCallbackInfo& info, std::any data) {
+void onConfigReload() {
     static auto* const SESSIONLENGTH = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:work_duration")->getDataStaticPtr();
     static auto* const RESTLENGTH    = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:rest_duration")->getDataStaticPtr();
 
@@ -263,12 +264,11 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
         }
     });
 
-    static auto configReloadCallback = HyprlandAPI::registerCallbackDynamic(PHANDLE, "configReloaded", onConfigReload);
+    static auto configReloadCallback = Event::bus()->m_events.config.reloaded.listen(onConfigReload);
 
-    static auto closeWindowCallback =
-        HyprlandAPI::registerCallbackDynamic(PHANDLE, "closeWindow", [&](void* self, SCallbackInfo& info, std::any data) { onWindowClose(self, data); });
+    static auto closeWindowCallback = Event::bus()->m_events.window.close.listen([](PHLWINDOW pWindow) { onWindowClose(nullptr, pWindow); });
 
-    static auto openWindowCallback = HyprlandAPI::registerCallbackDynamic(PHANDLE, "openWindow", [&](void* self, SCallbackInfo& info, std::any data) { onWindowOpen(self, data); });
+    static auto openWindowCallback = Event::bus()->m_events.window.open.listen([](PHLWINDOW pWindow) { onWindowOpen(nullptr, pWindow); });
 
     for (auto& window : g_pCompositor->m_windows) {
         if (window->isHidden() || !window->m_isMapped)
