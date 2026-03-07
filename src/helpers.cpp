@@ -51,7 +51,7 @@ void HyprmodoroDecoration::updateHoverOffset() {
     const auto         buttonHover  = **PBUTTONHOVER;
     const auto         textSize     = **PTEXTSIZE;
 
-    *m_hoverOffset = **PTITLEMARGIN + textSize + (((buttonHover && m_isNearContainer) || !buttonHover) ? buttonsSpace : 0.0f);
+    m_hoverOffset->setValueAndWarp(**PTITLEMARGIN + textSize + (((buttonHover && m_isNearContainer) || !buttonHover) ? buttonsSpace : 0.0f));
 }
 
 bool HyprmodoroDecoration::isValidInput() {

@@ -59,23 +59,19 @@ SDecorationPositioningInfo HyprmodoroDecoration::getPositioningInfo() {
         return info;
 
     const auto textSize      = **PTEXTSIZE;
-    const auto buttonSize    = **PBUTTONSIZE;
-    const auto spacing       = **PSPACING;
-    const auto buttonsSpace  = spacing + buttonSize;
+    const auto buttonsSpace  = **PSPACING + **PBUTTONSIZE;
     const auto textHover     = **PTEXTHOVER;
     const auto buttonHover   = **PBUTTONHOVER;
+    const auto titleMargin   = **PTITLEMARGIN;
     const auto windowPadding = **PWINDOWPADDING;
-    const auto POMDOOROSTATE = g_pGlobalState->pomodoroSession->getState();
     float      yOffset       = 0.0f;
 
     if (textHover && buttonHover && !m_isNearContainer) {
         yOffset = windowPadding;
     } else if ((buttonHover && m_isNearContainer) || !buttonHover) {
-        yOffset = POMDOOROSTATE == State::STOPPED ? (windowPadding + buttonSize + spacing) : (windowPadding + buttonSize + spacing + textSize);
-    } else if (POMDOOROSTATE != State::STOPPED) {
-        yOffset = windowPadding + textSize + spacing;
+        yOffset = titleMargin + textSize + buttonsSpace;
     } else {
-        yOffset = windowPadding;
+        yOffset = titleMargin + textSize;
     }
 
     info.desiredExtents = {{0.0, yOffset}, {0, 0}};
@@ -265,8 +261,5 @@ void HyprmodoroDecoration::updateWindow(PHLWINDOW pWindow) {
 }
 
 void HyprmodoroDecoration::damageEntire() {
-    auto box = assignedBoxGlobal();
-    box.y -= m_layout.container.height;
-    box.height += m_layout.container.height;
-    g_pHyprRenderer->damageBox(box);
+    g_pHyprRenderer->damageBox(assignedBoxGlobal());
 }

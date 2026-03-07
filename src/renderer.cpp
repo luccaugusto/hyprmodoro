@@ -20,7 +20,7 @@ void HyprmodoroDecoration::renderTitleBar(PHLMONITOR pMonitor, float alpha) {
     updateHoverOffset();
     const auto yOffset = m_hoverOffset->value();
 
-    m_layout.container = CBox(windowBox.x + (windowBox.width - windowBox.width / 2) / 2, (windowBox.y - yOffset), windowBox.width / 2, yOffset);
+    m_layout.container = CBox(windowBox.x + (windowBox.width - windowBox.width / 2) / 2, windowBox.y, windowBox.width / 2, yOffset);
 
     m_layout.container.translate(-pMonitor->m_position).scale(pMonitor->m_scale).round();
 
