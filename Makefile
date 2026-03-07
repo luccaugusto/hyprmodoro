@@ -16,4 +16,7 @@ all:
 clean:
 	rm -f ./$(TARGET)
 
+reload:
+	hyprctl plugin unload $(CURDIR)/$(TARGET) && hyprctl plugin load $(CURDIR)/$(TARGET)
+
 .PHONY: all clean
