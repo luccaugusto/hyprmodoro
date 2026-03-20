@@ -27,13 +27,25 @@ bool HyprmodoroDecoration::isHoveringTitle(const CBox& windowBox, const float& s
     static auto* const PHOVERBUTTONS = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:hover:buttons")->getDataStaticPtr();
     static const auto* PHOVERHEIGHT  = (Hyprlang::FLOAT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:hover:height")->getDataStaticPtr();
     static const auto* PHOVERWIDTH   = (Hyprlang::FLOAT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:hover:width")->getDataStaticPtr();
+    static auto* const PTITLEPOSITION = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:title:position")->getDataStaticPtr();
+    static auto* const PTITLEOVERLAY  = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:title:overlay")->getDataStaticPtr();
 
     const auto         cursorPos = cursorRelativeToContainer();
 
     const float        hoverWidth  = windowBox.width * scale * (**PHOVERWIDTH / 100.0f);
     const float        hoverHeight = windowBox.height * scale * (**PHOVERHEIGHT / 100.0f);
 
-    CBox               hoverBox = CBox((m_layout.container.width - hoverWidth) * 0.5f, -hoverHeight, hoverWidth, (hoverHeight * 2.0f) + m_layout.container.height);
+    const std::string  position   = std::string(*PTITLEPOSITION);
+    const bool         isVertical = (position == "left" || position == "right");
+    const bool         isOverlay  = isVertical || **PTITLEOVERLAY;
+
+    CBox               hoverBox;
+    if (isOverlay) {
+        // For overlay, the container floats on the window — extend hover zone in all directions
+        hoverBox = CBox(-hoverWidth, -hoverHeight, (hoverWidth * 2.0f) + m_layout.container.width, (hoverHeight * 2.0f) + m_layout.container.height);
+    } else {
+        hoverBox = CBox((m_layout.container.width - hoverWidth) * 0.5f, -hoverHeight, hoverWidth, (hoverHeight * 2.0f) + m_layout.container.height);
+    }
 
     return hoverBox.containsPoint(cursorPos);
 }

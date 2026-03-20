@@ -9,18 +9,46 @@
 void HyprmodoroDecoration::renderTitleBar(PHLMONITOR pMonitor, float alpha) {
     static auto* const PTITLEFLOATINGWINDOW = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:title:floating_window")->getDataStaticPtr();
     static auto* const PMINWINDOWWIDTH      = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:window:min_width")->getDataStaticPtr();
+    static auto* const PTITLEPOSITION       = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:title:position")->getDataStaticPtr();
+    static auto* const PTEXTSIZE            = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:text:size")->getDataStaticPtr();
+    static auto* const PTITLEMARGIN         = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:title:margin")->getDataStaticPtr();
+    static auto* const PTITLEOVERLAY        = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:title:overlay")->getDataStaticPtr();
 
     if (!**PTITLEFLOATINGWINDOW && m_pWindow.lock()->m_isFloating)
         return;
 
     const auto windowBox = assignedBoxGlobal();
-    if (windowBox.width <= **PMINWINDOWWIDTH) // don't render for small windows
+    if (windowBox.width <= 0 || windowBox.height <= 0)
         return;
 
     updateHoverOffset();
-    const auto yOffset = m_hoverOffset->value();
+    const auto        yOffset    = m_hoverOffset->value();
+    const std::string position   = std::string(*PTITLEPOSITION);
+    const bool        isVertical = (position == "left" || position == "right");
+    const bool        isOverlay  = isVertical || **PTITLEOVERLAY;
 
-    m_layout.container = CBox(windowBox.x + (windowBox.width - windowBox.width / 2) / 2, windowBox.y, windowBox.width / 2, yOffset);
+    // For non-overlay horizontal positions, skip small windows
+    if (!isOverlay && windowBox.width <= **PMINWINDOWWIDTH)
+        return;
+
+    if (isOverlay) {
+        float containerW, containerH, containerX, containerY;
+        if (isVertical) {
+            containerW = **PTITLEMARGIN * 2 + **PTEXTSIZE * 6;
+            containerH = yOffset;
+            containerX = (position == "left") ? windowBox.x : (windowBox.x + windowBox.width - containerW);
+            containerY = windowBox.y + (windowBox.height - containerH) / 2;
+        } else {
+            containerW = windowBox.width / 2;
+            containerH = yOffset;
+            containerX = windowBox.x + (windowBox.width - containerW) / 2;
+            containerY = (position == "bottom") ? (windowBox.y + windowBox.height - containerH) : windowBox.y;
+        }
+        m_layout.container = CBox(containerX, containerY, containerW, containerH);
+    } else {
+        float containerY = (position == "bottom") ? (windowBox.y + windowBox.height - yOffset) : windowBox.y;
+        m_layout.container = CBox(windowBox.x + (windowBox.width - windowBox.width / 2) / 2, containerY, windowBox.width / 2, yOffset);
+    }
 
     m_layout.container.translate(-pMonitor->m_position).scale(pMonitor->m_scale).round();
 
@@ -39,6 +67,19 @@ void HyprmodoroDecoration::renderTitleBar(PHLMONITOR pMonitor, float alpha) {
 
     renderTimer(CAIRO, Vector2D(m_layout.container.width, m_layout.container.height), pMonitor->m_scale);
     renderButtons(CAIRO, Vector2D(m_layout.container.width, m_layout.container.height), pMonitor->m_scale);
+
+    // Draw dark grey transparent background behind content for overlay positions
+    if (isOverlay) {
+        float bgOpacity = std::max(m_textOpacity->value(), m_vButtons[ButtonAction::START].opacity->value());
+        if (bgOpacity > 0.0f) {
+            cairo_save(CAIRO);
+            cairo_set_operator(CAIRO, CAIRO_OPERATOR_DEST_OVER);
+            cairo_set_source_rgba(CAIRO, 0.2, 0.2, 0.2, 0.55 * bgOpacity);
+            cairo_rectangle(CAIRO, 0, 0, m_layout.container.width, m_layout.container.height);
+            cairo_fill(CAIRO);
+            cairo_restore(CAIRO);
+        }
+    }
 
     cairo_surface_flush(CAIROSURFACE);
     const auto DATA = cairo_image_surface_get_data(CAIROSURFACE);
@@ -209,27 +250,38 @@ void HyprmodoroDecoration::renderButtons(cairo_t* cairo, const Vector2D& buffer,
 void HyprmodoroDecoration::renderProgressBorder(PHLMONITOR pMonitor, float alpha) {
     static auto* const BORDERCOLOR          = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:border:color")->getDataStaticPtr();
     static auto* const BORDERFLOATINGWINDOW = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:border:floating_window")->getDataStaticPtr();
+    static auto* const PTITLEPOSITION       = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:title:position")->getDataStaticPtr();
     if (!**BORDERFLOATINGWINDOW && m_pWindow.lock()->m_isFloating)
         return;
 
-    const auto   SESSIONPROGRESS = g_pGlobalState->pomodoroSession->getProgress();
+    const auto        SESSIONPROGRESS = g_pGlobalState->pomodoroSession->getProgress();
 
-    auto         windowBox = assignedBoxGlobal();
-    const auto   PWINDOW   = m_pWindow.lock();
-    const auto   BORDER    = PWINDOW->getRealBorderSize() * pMonitor->m_scale;
-    const auto   ROUNDING  = PWINDOW->rounding() * pMonitor->m_scale;
+    auto              windowBox = assignedBoxGlobal();
+    const auto        PWINDOW   = m_pWindow.lock();
+    const auto        BORDER    = PWINDOW->getRealBorderSize() * pMonitor->m_scale;
+    const auto        ROUNDING  = PWINDOW->rounding() * pMonitor->m_scale;
+    const std::string position  = std::string(*PTITLEPOSITION);
 
     const auto   corner       = ROUNDING + BORDER;
-    const float  centerBorder = BORDER * 0.5f;
-    const float  centerCorner = corner - centerBorder;
+    const float  cb           = BORDER * 0.5f;
+    const float  cc           = corner - cb;
 
     const float  perimeter    = 2 * (windowBox.width + windowBox.height);
     const double targetLength = perimeter * SESSIONPROGRESS * 0.5;
 
     windowBox.translate(-pMonitor->m_position).scale(pMonitor->m_scale).round();
 
+    const float w = windowBox.width;
+    const float h = windowBox.height;
+
+    // Corner arc centers
+    const float tlx = cc + cb, tly = cc + cb;
+    const float trx = w - cc - cb, try_ = cc + cb;
+    const float blx = cc + cb, bly = h - cc - cb;
+    const float brx = w - cc - cb, bry = h - cc - cb;
+
     const CHyprColor borderColor  = CHyprColor(**BORDERCOLOR);
-    const auto       CAIROSURFACE = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, windowBox.width, windowBox.height);
+    const auto       CAIROSURFACE = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, w, h);
     const auto       CAIRO        = cairo_create(CAIROSURFACE);
     const double     dashes[]     = {targetLength, perimeter};
 
@@ -241,47 +293,162 @@ void HyprmodoroDecoration::renderProgressBorder(PHLMONITOR pMonitor, float alpha
     cairo_set_line_width(CAIRO, BORDER);
 
     if (ROUNDING > 0) {
-        // Right side path (top center -> right -> bottom center)
-        cairo_new_path(CAIRO);
-        cairo_move_to(CAIRO, windowBox.width * 0.5f, centerBorder); // Start at top center
-        cairo_line_to(CAIRO, windowBox.width - centerCorner - centerBorder, centerBorder);
-        cairo_arc(CAIRO, windowBox.width - centerCorner - centerBorder, centerCorner + centerBorder, centerCorner, -M_PI_2, 0);
-        cairo_line_to(CAIRO, windowBox.width - centerBorder, windowBox.height - centerCorner - centerBorder);
-        cairo_arc(CAIRO, windowBox.width - centerCorner - centerBorder, windowBox.height - centerCorner - centerBorder, centerCorner, 0, M_PI_2);
-        cairo_line_to(CAIRO, windowBox.width * 0.5f, windowBox.height - centerBorder);
+        if (position == "bottom") {
+            // CW path: bottom center -> right -> top center
+            cairo_new_path(CAIRO);
+            cairo_move_to(CAIRO, w * 0.5f, h - cb);
+            cairo_line_to(CAIRO, brx, h - cb);
+            cairo_arc_negative(CAIRO, brx, bry, cc, M_PI_2, 0);
+            cairo_line_to(CAIRO, w - cb, try_);
+            cairo_arc_negative(CAIRO, trx, try_, cc, 0, -M_PI_2);
+            cairo_line_to(CAIRO, w * 0.5f, cb);
+            cairo_set_dash(CAIRO, dashes, 2, 0);
+            cairo_stroke(CAIRO);
 
-        cairo_set_dash(CAIRO, dashes, 2, 0);
-        cairo_stroke(CAIRO);
+            // CCW path: bottom center -> left -> top center
+            cairo_new_path(CAIRO);
+            cairo_move_to(CAIRO, w * 0.5f, h - cb);
+            cairo_line_to(CAIRO, blx, h - cb);
+            cairo_arc(CAIRO, blx, bly, cc, M_PI_2, M_PI);
+            cairo_line_to(CAIRO, cb, tly);
+            cairo_arc(CAIRO, tlx, tly, cc, M_PI, 3 * M_PI_2);
+            cairo_line_to(CAIRO, w * 0.5f, cb);
+            cairo_set_dash(CAIRO, dashes, 2, 0);
+            cairo_stroke(CAIRO);
+        } else if (position == "left") {
+            // CW path: left center -> up -> right center
+            cairo_new_path(CAIRO);
+            cairo_move_to(CAIRO, cb, h * 0.5f);
+            cairo_line_to(CAIRO, cb, tly);
+            cairo_arc(CAIRO, tlx, tly, cc, -M_PI, -M_PI_2);
+            cairo_line_to(CAIRO, trx, cb);
+            cairo_arc(CAIRO, trx, try_, cc, -M_PI_2, 0);
+            cairo_line_to(CAIRO, w - cb, h * 0.5f);
+            cairo_set_dash(CAIRO, dashes, 2, 0);
+            cairo_stroke(CAIRO);
 
-        // Left side path (top center -> left -> bottom center)
-        cairo_new_path(CAIRO);
-        cairo_move_to(CAIRO, windowBox.width * 0.5f, centerBorder);
-        cairo_line_to(CAIRO, centerCorner + centerBorder, centerBorder);
-        cairo_arc_negative(CAIRO, centerCorner + centerBorder, centerCorner + centerBorder, centerCorner, -M_PI_2, -M_PI);
-        cairo_line_to(CAIRO, centerBorder, windowBox.height - centerCorner - centerBorder);
-        cairo_arc_negative(CAIRO, centerCorner + centerBorder, windowBox.height - centerCorner - centerBorder, centerCorner, -M_PI, -3 * M_PI_2);
-        cairo_line_to(CAIRO, windowBox.width * 0.5f, windowBox.height - centerBorder);
+            // CCW path: left center -> down -> right center
+            cairo_new_path(CAIRO);
+            cairo_move_to(CAIRO, cb, h * 0.5f);
+            cairo_line_to(CAIRO, cb, bly);
+            cairo_arc_negative(CAIRO, blx, bly, cc, M_PI, M_PI_2);
+            cairo_line_to(CAIRO, brx, h - cb);
+            cairo_arc_negative(CAIRO, brx, bry, cc, M_PI_2, 0);
+            cairo_line_to(CAIRO, w - cb, h * 0.5f);
+            cairo_set_dash(CAIRO, dashes, 2, 0);
+            cairo_stroke(CAIRO);
+        } else if (position == "right") {
+            // CW path: right center -> down -> left center
+            cairo_new_path(CAIRO);
+            cairo_move_to(CAIRO, w - cb, h * 0.5f);
+            cairo_line_to(CAIRO, w - cb, bry);
+            cairo_arc(CAIRO, brx, bry, cc, 0, M_PI_2);
+            cairo_line_to(CAIRO, blx, h - cb);
+            cairo_arc(CAIRO, blx, bly, cc, M_PI_2, M_PI);
+            cairo_line_to(CAIRO, cb, h * 0.5f);
+            cairo_set_dash(CAIRO, dashes, 2, 0);
+            cairo_stroke(CAIRO);
 
-        cairo_set_dash(CAIRO, dashes, 2, 0);
-        cairo_stroke(CAIRO);
+            // CCW path: right center -> up -> left center
+            cairo_new_path(CAIRO);
+            cairo_move_to(CAIRO, w - cb, h * 0.5f);
+            cairo_line_to(CAIRO, w - cb, try_);
+            cairo_arc_negative(CAIRO, trx, try_, cc, 0, -M_PI_2);
+            cairo_line_to(CAIRO, tlx, cb);
+            cairo_arc_negative(CAIRO, tlx, tly, cc, -M_PI_2, -M_PI);
+            cairo_line_to(CAIRO, cb, h * 0.5f);
+            cairo_set_dash(CAIRO, dashes, 2, 0);
+            cairo_stroke(CAIRO);
+        } else {
+            // Top (default): CW path: top center -> right -> bottom center
+            cairo_new_path(CAIRO);
+            cairo_move_to(CAIRO, w * 0.5f, cb);
+            cairo_line_to(CAIRO, trx, cb);
+            cairo_arc(CAIRO, trx, try_, cc, -M_PI_2, 0);
+            cairo_line_to(CAIRO, w - cb, bry);
+            cairo_arc(CAIRO, brx, bry, cc, 0, M_PI_2);
+            cairo_line_to(CAIRO, w * 0.5f, h - cb);
+            cairo_set_dash(CAIRO, dashes, 2, 0);
+            cairo_stroke(CAIRO);
+
+            // CCW path: top center -> left -> bottom center
+            cairo_new_path(CAIRO);
+            cairo_move_to(CAIRO, w * 0.5f, cb);
+            cairo_line_to(CAIRO, tlx, cb);
+            cairo_arc_negative(CAIRO, tlx, tly, cc, -M_PI_2, -M_PI);
+            cairo_line_to(CAIRO, cb, bly);
+            cairo_arc_negative(CAIRO, blx, bly, cc, -M_PI, -3 * M_PI_2);
+            cairo_line_to(CAIRO, w * 0.5f, h - cb);
+            cairo_set_dash(CAIRO, dashes, 2, 0);
+            cairo_stroke(CAIRO);
+        }
     } else {
-        cairo_new_path(CAIRO);
-        cairo_move_to(CAIRO, windowBox.width * 0.5f, centerBorder);
-        cairo_line_to(CAIRO, windowBox.width - centerBorder, centerBorder);
-        cairo_line_to(CAIRO, windowBox.width - centerBorder, windowBox.height - centerBorder);
-        cairo_line_to(CAIRO, windowBox.width * 0.5f, windowBox.height - centerBorder);
+        if (position == "bottom") {
+            cairo_new_path(CAIRO);
+            cairo_move_to(CAIRO, w * 0.5f, h - cb);
+            cairo_line_to(CAIRO, w - cb, h - cb);
+            cairo_line_to(CAIRO, w - cb, cb);
+            cairo_line_to(CAIRO, w * 0.5f, cb);
+            cairo_set_dash(CAIRO, dashes, 2, 0);
+            cairo_stroke(CAIRO);
 
-        cairo_set_dash(CAIRO, dashes, 2, 0);
-        cairo_stroke(CAIRO);
+            cairo_new_path(CAIRO);
+            cairo_move_to(CAIRO, w * 0.5f, h - cb);
+            cairo_line_to(CAIRO, cb, h - cb);
+            cairo_line_to(CAIRO, cb, cb);
+            cairo_line_to(CAIRO, w * 0.5f, cb);
+            cairo_set_dash(CAIRO, dashes, 2, 0);
+            cairo_stroke(CAIRO);
+        } else if (position == "left") {
+            cairo_new_path(CAIRO);
+            cairo_move_to(CAIRO, cb, h * 0.5f);
+            cairo_line_to(CAIRO, cb, cb);
+            cairo_line_to(CAIRO, w - cb, cb);
+            cairo_line_to(CAIRO, w - cb, h * 0.5f);
+            cairo_set_dash(CAIRO, dashes, 2, 0);
+            cairo_stroke(CAIRO);
 
-        cairo_new_path(CAIRO);
-        cairo_move_to(CAIRO, windowBox.width * 0.5f, centerBorder);
-        cairo_line_to(CAIRO, centerBorder, centerBorder);
-        cairo_line_to(CAIRO, centerBorder, windowBox.height - centerBorder);
-        cairo_line_to(CAIRO, windowBox.width * 0.5f, windowBox.height - centerBorder);
+            cairo_new_path(CAIRO);
+            cairo_move_to(CAIRO, cb, h * 0.5f);
+            cairo_line_to(CAIRO, cb, h - cb);
+            cairo_line_to(CAIRO, w - cb, h - cb);
+            cairo_line_to(CAIRO, w - cb, h * 0.5f);
+            cairo_set_dash(CAIRO, dashes, 2, 0);
+            cairo_stroke(CAIRO);
+        } else if (position == "right") {
+            cairo_new_path(CAIRO);
+            cairo_move_to(CAIRO, w - cb, h * 0.5f);
+            cairo_line_to(CAIRO, w - cb, h - cb);
+            cairo_line_to(CAIRO, cb, h - cb);
+            cairo_line_to(CAIRO, cb, h * 0.5f);
+            cairo_set_dash(CAIRO, dashes, 2, 0);
+            cairo_stroke(CAIRO);
 
-        cairo_set_dash(CAIRO, dashes, 2, 0);
-        cairo_stroke(CAIRO);
+            cairo_new_path(CAIRO);
+            cairo_move_to(CAIRO, w - cb, h * 0.5f);
+            cairo_line_to(CAIRO, w - cb, cb);
+            cairo_line_to(CAIRO, cb, cb);
+            cairo_line_to(CAIRO, cb, h * 0.5f);
+            cairo_set_dash(CAIRO, dashes, 2, 0);
+            cairo_stroke(CAIRO);
+        } else {
+            // Top (default)
+            cairo_new_path(CAIRO);
+            cairo_move_to(CAIRO, w * 0.5f, cb);
+            cairo_line_to(CAIRO, w - cb, cb);
+            cairo_line_to(CAIRO, w - cb, h - cb);
+            cairo_line_to(CAIRO, w * 0.5f, h - cb);
+            cairo_set_dash(CAIRO, dashes, 2, 0);
+            cairo_stroke(CAIRO);
+
+            cairo_new_path(CAIRO);
+            cairo_move_to(CAIRO, w * 0.5f, cb);
+            cairo_line_to(CAIRO, cb, cb);
+            cairo_line_to(CAIRO, cb, h - cb);
+            cairo_line_to(CAIRO, w * 0.5f, h - cb);
+            cairo_set_dash(CAIRO, dashes, 2, 0);
+            cairo_stroke(CAIRO);
+        }
     }
 
     if (m_pProgressTex->m_texID == 0) {

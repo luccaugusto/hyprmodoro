@@ -48,12 +48,18 @@ plugin:hyprmodoro:title:reserve_space_all     # Reserve space for title bar for 
 plugin:hyprmodoro:title:floating_window       # Show title on floating windows (default: false)
 plugin:hyprmodoro:title:margin                # Margin around title elements (default: 15)
 plugin:hyprmodoro:title:spacing               # Spacing between elements (default: 8)
+plugin:hyprmodoro:title:position              # Position of the title bar: top, bottom, left, right (default: top)
+plugin:hyprmodoro:title:overlay               # Render title as overlay on window content instead of reserving space (default: false)
+                                              # Always true for left/right positions. When enabled for top/bottom,
+                                              # the window won't resize and the UI floats over the content.
+											  # This is due to a limitation on Hyprland, couldn't get it to work
 
 # Progress border configurations
 plugin:hyprmodoro:border:enabled              # Show progress border (default: true)
 plugin:hyprmodoro:border:all_windows          # Show progress border on all windows or only the active window (default: false)
 plugin:hyprmodoro:border:floating_window      # Show progress border on floating windows (default: false)
 plugin:hyprmodoro:border:color                # Progress border color (default: rgba(33333388))
+                                              # Note: The progress border starts from the edge matching title:position
 
 # Text configurations
 plugin:hyprmodoro:text:color                  # Timer text color (default: rgba(ffffffff))

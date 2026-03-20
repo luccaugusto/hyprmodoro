@@ -192,6 +192,8 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:title:all_windows", Hyprlang::INT{0});
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:title:margin", Hyprlang::INT{15});
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:title:spacing", Hyprlang::INT{8});
+    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:title:position", Hyprlang::STRING{"top"});
+    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:title:overlay", Hyprlang::INT{0});
 
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:hover:text", Hyprlang::INT{0});
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:hover:buttons", Hyprlang::INT{1});

@@ -39,6 +39,8 @@ SDecorationPositioningInfo HyprmodoroDecoration::getPositioningInfo() {
     static auto* const         PSPACING         = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:title:spacing")->getDataStaticPtr();
     static auto* const         PTEXTSIZE        = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:text:size")->getDataStaticPtr();
     static auto* const         PWINDOWPADDING   = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:window:padding")->getDataStaticPtr();
+    static auto* const         PTITLEPOSITION   = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:title:position")->getDataStaticPtr();
+    static auto* const         PTITLEOVERLAY    = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:title:overlay")->getDataStaticPtr();
 
     SDecorationPositioningInfo info;
     info.edges    = DECORATION_EDGE_BOTTOM | DECORATION_EDGE_LEFT | DECORATION_EDGE_RIGHT | DECORATION_EDGE_TOP;
@@ -58,23 +60,38 @@ SDecorationPositioningInfo HyprmodoroDecoration::getPositioningInfo() {
     if (PWINDOW->m_size.x <= **PMINWINDOWWIDTH)
         return info;
 
-    const auto textSize      = **PTEXTSIZE;
-    const auto buttonsSpace  = **PSPACING + **PBUTTONSIZE;
-    const auto textHover     = **PTEXTHOVER;
-    const auto buttonHover   = **PBUTTONHOVER;
-    const auto titleMargin   = **PTITLEMARGIN;
-    const auto windowPadding = **PWINDOWPADDING;
-    float      yOffset       = 0.0f;
+    const auto        textSize      = **PTEXTSIZE;
+    const auto        buttonsSpace  = **PSPACING + **PBUTTONSIZE;
+    const auto        textHover     = **PTEXTHOVER;
+    const auto        buttonHover   = **PBUTTONHOVER;
+    const auto        titleMargin   = **PTITLEMARGIN;
+    const auto        windowPadding = **PWINDOWPADDING;
+    const std::string position      = std::string(*PTITLEPOSITION);
+    const bool        isVertical    = (position == "left" || position == "right");
+    const bool        isOverlay     = isVertical || **PTITLEOVERLAY;
+
+    float offset = 0.0f;
 
     if (textHover && buttonHover && !m_isNearContainer) {
-        yOffset = windowPadding;
+        offset = windowPadding;
     } else if ((buttonHover && m_isNearContainer) || !buttonHover) {
-        yOffset = titleMargin + textSize + buttonsSpace;
+        offset = titleMargin + textSize + buttonsSpace;
     } else {
-        yOffset = titleMargin + textSize;
+        offset = titleMargin + textSize;
     }
 
-    info.desiredExtents = {{0.0, yOffset}, {0, 0}};
+    if (isOverlay) {
+        // Overlay mode: no space reservation, UI renders on top of window content.
+        // For left/right this is required because Hyprland's 4-edge positioner
+        // applies desiredSize uniformly to all sides.
+        info.desiredExtents = {{0.0, 0.0}, {0.0, 0.0}};
+    } else {
+        if (position == "bottom")
+            info.desiredExtents = {{0.0, 0.0}, {0.0, offset}};
+        else
+            info.desiredExtents = {{0.0, offset}, {0.0, 0.0}};
+    }
+
     return info;
 }
 
