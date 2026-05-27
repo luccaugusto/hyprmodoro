@@ -1,3 +1,4 @@
+#include <hyprland/src/render/Renderer.hpp>
 #include "HyprmodoroPassElement.hpp"
 #include "hyprmodoroDecoration.hpp"
 
@@ -5,8 +6,9 @@ HyprmodoroPassElement::HyprmodoroPassElement(const HyprmodoroPassElement::SBorde
     ;
 }
 
-void HyprmodoroPassElement::draw(const CRegion& damage) {
-    data.deco->drawPass(g_pHyprOpenGL->m_renderData.pMonitor.lock(), data.a);
+std::vector<UP<IPassElement>> HyprmodoroPassElement::draw() {
+    data.deco->drawPass(g_pHyprRenderer->m_renderData.pMonitor.lock(), data.a);
+    return {};
 }
 
 bool HyprmodoroPassElement::needsLiveBlur() {

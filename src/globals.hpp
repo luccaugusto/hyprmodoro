@@ -1,6 +1,7 @@
 #pragma once
 
 #include <hyprland/src/plugins/PluginAPI.hpp>
+#include <hyprland/src/config/ConfigValue.hpp>
 
 #include "pomodoro.hpp"
 

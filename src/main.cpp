@@ -5,6 +5,7 @@
 #include <hyprland/src/event/EventBus.hpp>
 
 #include <string>
+#include <hyprland/src/config/values/ConfigValues.hpp>
 
 #include "hyprmodoroDecoration.hpp"
 #include "globals.hpp"
@@ -90,8 +91,8 @@ std::string getProgress(eHyprCtlOutputFormat, std::string) {
 void onWindowOpen(void* self, std::any data) {
     const auto         PWINDOW = std::any_cast<PHLWINDOW>(data);
 
-    static auto* const IS_HYPRMODORO_ENABLED = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:enabled")->getDataStaticPtr();
-    if (!(**IS_HYPRMODORO_ENABLED) || PWINDOW == nullptr)
+    static auto const IS_HYPRMODORO_ENABLED = CConfigValue<Config::INTEGER>{"plugin:hyprmodoro:enabled"};
+    if (!(*IS_HYPRMODORO_ENABLED) || PWINDOW == nullptr)
         return;
 
     if (std::ranges::any_of(PWINDOW->m_windowDecorations, [](const auto& d) { return d->getDisplayName() == "hyprmodoro"; }))
@@ -113,11 +114,11 @@ void onWindowClose(void* self, std::any data) {
 // Safety check: if title is disabled, auto-transition must be enabled
 // Otherwise user has no way to manually transition (no timer to click)
 bool getEffectiveAutoTransition() {
-    static auto* const PAUTOTRANSITION = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:auto_transition")->getDataStaticPtr();
-    static auto* const PTITLEENABLED   = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:title:enabled")->getDataStaticPtr();
+    static auto const PAUTOTRANSITION = CConfigValue<Config::INTEGER>{"plugin:hyprmodoro:auto_transition"};
+    static auto const PTITLEENABLED = CConfigValue<Config::INTEGER>{"plugin:hyprmodoro:title:enabled"};
 
-    bool autoTransition = **PAUTOTRANSITION;
-    if (!**PTITLEENABLED) {
+    bool autoTransition = *PAUTOTRANSITION;
+    if (!*PTITLEENABLED) {
         autoTransition = true;
     }
 
@@ -125,12 +126,12 @@ bool getEffectiveAutoTransition() {
 }
 
 void onConfigReload() {
-    static auto* const SESSIONLENGTH = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:work_duration")->getDataStaticPtr();
-    static auto* const RESTLENGTH    = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:rest_duration")->getDataStaticPtr();
+    static auto const SESSIONLENGTH = CConfigValue<Config::INTEGER>{"plugin:hyprmodoro:work_duration"};
+    static auto const RESTLENGTH = CConfigValue<Config::INTEGER>{"plugin:hyprmodoro:rest_duration"};
 
     if (g_pGlobalState->pomodoroSession) {
-        g_pGlobalState->pomodoroSession->setSessionLength(**SESSIONLENGTH);
-        g_pGlobalState->pomodoroSession->setRestLength(**RESTLENGTH);
+        g_pGlobalState->pomodoroSession->setSessionLength(*SESSIONLENGTH);
+        g_pGlobalState->pomodoroSession->setRestLength(*RESTLENGTH);
         g_pGlobalState->pomodoroSession->setAutoTransition(getEffectiveAutoTransition());
     }
 }
@@ -151,56 +152,58 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
 
     g_pGlobalState = makeUnique<SGlobalState>();
 
-    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:enabled", Hyprlang::INT{1});
-    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:work_duration", Hyprlang::INT{25});
-    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:rest_duration", Hyprlang::INT{5});
-    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:auto_transition", Hyprlang::INT{1});
+    using namespace Config::Values;
 
-    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:border:enabled", Hyprlang::INT{1});
-    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:border:floating_window", Hyprlang::INT{0});
-    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:border:all_windows", Hyprlang::INT{0});
-    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:border:color", Hyprlang::INT{*configStringToInt("rgba(33333388)")});
+    HyprlandAPI::addConfigValueV2(PHANDLE, makeShared<Int>("plugin:hyprmodoro:enabled", "Enable hyprmodoro", 1));
+    HyprlandAPI::addConfigValueV2(PHANDLE, makeShared<Int>("plugin:hyprmodoro:work_duration", "Work session duration in minutes", 25));
+    HyprlandAPI::addConfigValueV2(PHANDLE, makeShared<Int>("plugin:hyprmodoro:rest_duration", "Rest duration in minutes", 5));
+    HyprlandAPI::addConfigValueV2(PHANDLE, makeShared<Int>("plugin:hyprmodoro:auto_transition", "Auto-transition between work and rest", 1));
 
-    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:text:color", Hyprlang::INT{*configStringToInt("rgba(ffffffff)")});
-    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:text:font", Hyprlang::STRING{"Sans"});
-    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:text:size", Hyprlang::INT{17});
-    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:text:work_prefix", Hyprlang::STRING{"🍅"});
-    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:text:rest_prefix", Hyprlang::STRING{"☕"});
-    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:text:waiting_prefix", Hyprlang::STRING{"⏸"});
-    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:text:skip_on_click", Hyprlang::INT{1});
+    HyprlandAPI::addConfigValueV2(PHANDLE, makeShared<Int>("plugin:hyprmodoro:border:enabled", "Enable progress border", 1));
+    HyprlandAPI::addConfigValueV2(PHANDLE, makeShared<Int>("plugin:hyprmodoro:border:floating_window", "Show border on floating windows", 0));
+    HyprlandAPI::addConfigValueV2(PHANDLE, makeShared<Int>("plugin:hyprmodoro:border:all_windows", "Show border on all windows", 0));
+    HyprlandAPI::addConfigValueV2(PHANDLE, makeShared<Color>("plugin:hyprmodoro:border:color", "Border color", 0x88333333));
 
-    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:sound:player", Hyprlang::STRING{"pw-play"});
-    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:sound:work_end", Hyprlang::STRING{""});
-    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:sound:rest_end", Hyprlang::STRING{""});
+    HyprlandAPI::addConfigValueV2(PHANDLE, makeShared<Color>("plugin:hyprmodoro:text:color", "Text color", 0xffffffff));
+    HyprlandAPI::addConfigValueV2(PHANDLE, makeShared<String>("plugin:hyprmodoro:text:font", "Font family", "Sans"));
+    HyprlandAPI::addConfigValueV2(PHANDLE, makeShared<Int>("plugin:hyprmodoro:text:size", "Text size", 17));
+    HyprlandAPI::addConfigValueV2(PHANDLE, makeShared<String>("plugin:hyprmodoro:text:work_prefix", "Work timer prefix", "🍅"));
+    HyprlandAPI::addConfigValueV2(PHANDLE, makeShared<String>("plugin:hyprmodoro:text:rest_prefix", "Rest timer prefix", "☕"));
+    HyprlandAPI::addConfigValueV2(PHANDLE, makeShared<String>("plugin:hyprmodoro:text:waiting_prefix", "Waiting timer prefix", "⏸"));
+    HyprlandAPI::addConfigValueV2(PHANDLE, makeShared<Int>("plugin:hyprmodoro:text:skip_on_click", "Skip session on click", 1));
 
-    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:notification:enabled", Hyprlang::INT{1});
-    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:notification:use_system_notifications", Hyprlang::INT{0});
-    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:notification:work_end", Hyprlang::STRING{"Work session complete"});
-    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:notification:rest_end", Hyprlang::STRING{"Break is over"});
+    HyprlandAPI::addConfigValueV2(PHANDLE, makeShared<String>("plugin:hyprmodoro:sound:player", "Sound player command", "pw-play"));
+    HyprlandAPI::addConfigValueV2(PHANDLE, makeShared<String>("plugin:hyprmodoro:sound:work_end", "Sound file for work end", ""));
+    HyprlandAPI::addConfigValueV2(PHANDLE, makeShared<String>("plugin:hyprmodoro:sound:rest_end", "Sound file for rest end", ""));
 
-    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:exec_on_work_end", Hyprlang::STRING{""});
-    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:exec_on_rest_end", Hyprlang::STRING{""});
+    HyprlandAPI::addConfigValueV2(PHANDLE, makeShared<Int>("plugin:hyprmodoro:notification:enabled", "Enable notifications", 1));
+    HyprlandAPI::addConfigValueV2(PHANDLE, makeShared<Int>("plugin:hyprmodoro:notification:use_system_notifications", "Use system notifications", 0));
+    HyprlandAPI::addConfigValueV2(PHANDLE, makeShared<String>("plugin:hyprmodoro:notification:work_end", "Work end notification text", "Work session complete"));
+    HyprlandAPI::addConfigValueV2(PHANDLE, makeShared<String>("plugin:hyprmodoro:notification:rest_end", "Rest end notification text", "Break is over"));
 
-    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:buttons:size", Hyprlang::INT{17});
-    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:buttons:color:foreground", Hyprlang::INT{*configStringToInt("rgba(ffffffff)")});
-    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:buttons:color:background", Hyprlang::INT{*configStringToInt("rgba(ffffff44)")});
+    HyprlandAPI::addConfigValueV2(PHANDLE, makeShared<String>("plugin:hyprmodoro:exec_on_work_end", "Command to run on work end", ""));
+    HyprlandAPI::addConfigValueV2(PHANDLE, makeShared<String>("plugin:hyprmodoro:exec_on_rest_end", "Command to run on rest end", ""));
 
-    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:title:enabled", Hyprlang::INT{1});
-    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:title:reserve_space_all", Hyprlang::INT{0});
+    HyprlandAPI::addConfigValueV2(PHANDLE, makeShared<Int>("plugin:hyprmodoro:buttons:size", "Button size", 17));
+    HyprlandAPI::addConfigValueV2(PHANDLE, makeShared<Color>("plugin:hyprmodoro:buttons:color:foreground", "Button foreground color", 0xffffffff));
+    HyprlandAPI::addConfigValueV2(PHANDLE, makeShared<Color>("plugin:hyprmodoro:buttons:color:background", "Button background color", 0x44ffffff));
 
-    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:title:floating_window", Hyprlang::INT{0});
-    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:title:all_windows", Hyprlang::INT{0});
-    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:title:margin", Hyprlang::INT{15});
-    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:title:spacing", Hyprlang::INT{8});
-    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:title:position", Hyprlang::STRING{"top"});
-    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:title:overlay", Hyprlang::INT{0});
+    HyprlandAPI::addConfigValueV2(PHANDLE, makeShared<Int>("plugin:hyprmodoro:title:enabled", "Enable title bar", 1));
+    HyprlandAPI::addConfigValueV2(PHANDLE, makeShared<Int>("plugin:hyprmodoro:title:reserve_space_all", "Reserve space on all windows", 0));
 
-    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:hover:text", Hyprlang::INT{0});
-    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:hover:buttons", Hyprlang::INT{1});
-    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:hover:height", Hyprlang::FLOAT{10});
-    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:hover:width", Hyprlang::FLOAT{20});
-    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:window:min_width", Hyprlang::INT{300});
-    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprmodoro:window:padding", Hyprlang::INT{0});
+    HyprlandAPI::addConfigValueV2(PHANDLE, makeShared<Int>("plugin:hyprmodoro:title:floating_window", "Show title on floating windows", 0));
+    HyprlandAPI::addConfigValueV2(PHANDLE, makeShared<Int>("plugin:hyprmodoro:title:all_windows", "Show title on all windows", 0));
+    HyprlandAPI::addConfigValueV2(PHANDLE, makeShared<Int>("plugin:hyprmodoro:title:margin", "Title margin", 15));
+    HyprlandAPI::addConfigValueV2(PHANDLE, makeShared<Int>("plugin:hyprmodoro:title:spacing", "Title spacing", 8));
+    HyprlandAPI::addConfigValueV2(PHANDLE, makeShared<String>("plugin:hyprmodoro:title:position", "Title position", "top"));
+    HyprlandAPI::addConfigValueV2(PHANDLE, makeShared<Int>("plugin:hyprmodoro:title:overlay", "Overlay title on window", 0));
+
+    HyprlandAPI::addConfigValueV2(PHANDLE, makeShared<Int>("plugin:hyprmodoro:hover:text", "Show text on hover", 0));
+    HyprlandAPI::addConfigValueV2(PHANDLE, makeShared<Int>("plugin:hyprmodoro:hover:buttons", "Show buttons on hover", 1));
+    HyprlandAPI::addConfigValueV2(PHANDLE, makeShared<Float>("plugin:hyprmodoro:hover:height", "Hover zone height percent", 10.f));
+    HyprlandAPI::addConfigValueV2(PHANDLE, makeShared<Float>("plugin:hyprmodoro:hover:width", "Hover zone width percent", 20.f));
+    HyprlandAPI::addConfigValueV2(PHANDLE, makeShared<Int>("plugin:hyprmodoro:window:min_width", "Minimum window width for title", 300));
+    HyprlandAPI::addConfigValueV2(PHANDLE, makeShared<Int>("plugin:hyprmodoro:window:padding", "Window padding", 0));
 
     HyprlandAPI::addDispatcherV2(PHANDLE, "hyprmodoro:start", startTimer);
     HyprlandAPI::addDispatcherV2(PHANDLE, "hyprmodoro:stop", stopTimer);
@@ -213,23 +216,23 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     HyprlandAPI::registerHyprCtlCommand(PHANDLE, SHyprCtlCommand{"hyprmodoro:getState", true, getState});
     HyprlandAPI::registerHyprCtlCommand(PHANDLE, SHyprCtlCommand{"hyprmodoro:getTime", true, getTime});
 
-    static auto* const SESSIONLENGTH = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:work_duration")->getDataStaticPtr();
-    static auto* const RESTLENGTH    = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:rest_duration")->getDataStaticPtr();
+    static auto const SESSIONLENGTH = CConfigValue<Config::INTEGER>{"plugin:hyprmodoro:work_duration"};
+    static auto const RESTLENGTH = CConfigValue<Config::INTEGER>{"plugin:hyprmodoro:rest_duration"};
 
-    g_pGlobalState->pomodoroSession = makeUnique<Pomodoro>(**SESSIONLENGTH, **RESTLENGTH);
+    g_pGlobalState->pomodoroSession = makeUnique<Pomodoro>(*SESSIONLENGTH, *RESTLENGTH);
 
     // Apply autoTransition setting with safety check
     g_pGlobalState->pomodoroSession->setAutoTransition(getEffectiveAutoTransition());
 
     g_pGlobalState->pomodoroSession->setOnSessionEndCallback([](State endedState) {
-        static auto* const PSOUNDPLAYER   = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:sound:player")->getDataStaticPtr();
-        static auto* const PWORKENDFILE   = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:sound:work_end")->getDataStaticPtr();
-        static auto* const PRESTENDFILE   = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:sound:rest_end")->getDataStaticPtr();
-        static auto* const PWORKENDNOTIF  = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:notification:work_end")->getDataStaticPtr();
-        static auto* const PRESTENDNOTIF  = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:notification:rest_end")->getDataStaticPtr();
-        static auto* const PNOTIFENABLED  = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:notification:enabled")->getDataStaticPtr();
-        static auto* const PEXECWORKEND   = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:exec_on_work_end")->getDataStaticPtr();
-        static auto* const PEXECRESTEND   = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:exec_on_rest_end")->getDataStaticPtr();
+        static auto const PSOUNDPLAYER = CConfigValue<std::string>{"plugin:hyprmodoro:sound:player"};
+        static auto const PWORKENDFILE = CConfigValue<std::string>{"plugin:hyprmodoro:sound:work_end"};
+        static auto const PRESTENDFILE = CConfigValue<std::string>{"plugin:hyprmodoro:sound:rest_end"};
+        static auto const PWORKENDNOTIF = CConfigValue<std::string>{"plugin:hyprmodoro:notification:work_end"};
+        static auto const PRESTENDNOTIF = CConfigValue<std::string>{"plugin:hyprmodoro:notification:rest_end"};
+        static auto const PNOTIFENABLED = CConfigValue<Config::INTEGER>{"plugin:hyprmodoro:notification:enabled"};
+        static auto const PEXECWORKEND = CConfigValue<std::string>{"plugin:hyprmodoro:exec_on_work_end"};
+        static auto const PEXECRESTEND = CConfigValue<std::string>{"plugin:hyprmodoro:exec_on_rest_end"};
 
         bool soundPlayed      = false;
         bool soundConfigured  = false;

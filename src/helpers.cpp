@@ -1,3 +1,4 @@
+#include <hyprland/src/config/shared/animation/AnimationTree.hpp>
 #include <hyprland/src/managers/input/InputManager.hpp>
 #include <hyprland/src/protocols/LayerShell.hpp>
 #include <hyprland/src/managers/animation/AnimationManager.hpp>
@@ -23,21 +24,21 @@ bool HyprmodoroDecoration::isHoveringTitle(const CBox& windowBox, const float& s
     if (!isValidInput())
         return false;
 
-    static auto* const PHOVERTITLE   = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:hover:text")->getDataStaticPtr();
-    static auto* const PHOVERBUTTONS = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:hover:buttons")->getDataStaticPtr();
-    static const auto* PHOVERHEIGHT  = (Hyprlang::FLOAT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:hover:height")->getDataStaticPtr();
-    static const auto* PHOVERWIDTH   = (Hyprlang::FLOAT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:hover:width")->getDataStaticPtr();
-    static auto* const PTITLEPOSITION = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:title:position")->getDataStaticPtr();
-    static auto* const PTITLEOVERLAY  = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:title:overlay")->getDataStaticPtr();
+    static auto const PHOVERTITLE = CConfigValue<Config::INTEGER>{"plugin:hyprmodoro:hover:text"};
+    static auto const PHOVERBUTTONS = CConfigValue<Config::INTEGER>{"plugin:hyprmodoro:hover:buttons"};
+    static auto const PHOVERHEIGHT = CConfigValue<Config::FLOAT>{"plugin:hyprmodoro:hover:height"};
+    static auto const PHOVERWIDTH = CConfigValue<Config::FLOAT>{"plugin:hyprmodoro:hover:width"};
+    static auto const PTITLEPOSITION = CConfigValue<std::string>{"plugin:hyprmodoro:title:position"};
+    static auto const PTITLEOVERLAY = CConfigValue<Config::INTEGER>{"plugin:hyprmodoro:title:overlay"};
 
     const auto         cursorPos = cursorRelativeToContainer();
 
-    const float        hoverWidth  = windowBox.width * scale * (**PHOVERWIDTH / 100.0f);
-    const float        hoverHeight = windowBox.height * scale * (**PHOVERHEIGHT / 100.0f);
+    const float        hoverWidth  = windowBox.width * scale * (*PHOVERWIDTH / 100.0f);
+    const float        hoverHeight = windowBox.height * scale * (*PHOVERHEIGHT / 100.0f);
 
     const std::string  position   = std::string(*PTITLEPOSITION);
     const bool         isVertical = (position == "left" || position == "right");
-    const bool         isOverlay  = isVertical || **PTITLEOVERLAY;
+    const bool         isOverlay  = isVertical || *PTITLEOVERLAY;
 
     CBox               hoverBox;
     if (isOverlay) {
@@ -51,25 +52,25 @@ bool HyprmodoroDecoration::isHoveringTitle(const CBox& windowBox, const float& s
 }
 
 void HyprmodoroDecoration::updateHoverOffset() {
-    static auto* const PTEXTHOVER   = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:hover:text")->getDataStaticPtr();
-    static auto* const PBUTTONHOVER = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:hover:buttons")->getDataStaticPtr();
-    static auto* const PTITLEMARGIN = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:title:margin")->getDataStaticPtr();
-    static auto* const PBUTTONSIZE  = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:buttons:size")->getDataStaticPtr();
-    static auto* const PSPACING     = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:title:spacing")->getDataStaticPtr();
-    static auto* const PTEXTSIZE    = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:text:size")->getDataStaticPtr();
+    static auto const PTEXTHOVER = CConfigValue<Config::INTEGER>{"plugin:hyprmodoro:hover:text"};
+    static auto const PBUTTONHOVER = CConfigValue<Config::INTEGER>{"plugin:hyprmodoro:hover:buttons"};
+    static auto const PTITLEMARGIN = CConfigValue<Config::INTEGER>{"plugin:hyprmodoro:title:margin"};
+    static auto const PBUTTONSIZE = CConfigValue<Config::INTEGER>{"plugin:hyprmodoro:buttons:size"};
+    static auto const PSPACING = CConfigValue<Config::INTEGER>{"plugin:hyprmodoro:title:spacing"};
+    static auto const PTEXTSIZE = CConfigValue<Config::INTEGER>{"plugin:hyprmodoro:text:size"};
 
-    const auto         buttonsSpace = **PSPACING + **PBUTTONSIZE;
-    const auto         textHover    = **PTEXTHOVER;
-    const auto         buttonHover  = **PBUTTONHOVER;
-    const auto         textSize     = **PTEXTSIZE;
+    const auto         buttonsSpace = *PSPACING + *PBUTTONSIZE;
+    const auto         textHover    = *PTEXTHOVER;
+    const auto         buttonHover  = *PBUTTONHOVER;
+    const auto         textSize     = *PTEXTSIZE;
 
-    m_hoverOffset->setValueAndWarp(**PTITLEMARGIN + textSize + (((buttonHover && m_isNearContainer) || !buttonHover) ? buttonsSpace : 0.0f));
+    m_hoverOffset->setValueAndWarp(*PTITLEMARGIN + textSize + (((buttonHover && m_isNearContainer) || !buttonHover) ? buttonsSpace : 0.0f));
 }
 
 bool HyprmodoroDecoration::isValidInput() {
-    static auto* const PENABLED = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:enabled")->getDataStaticPtr();
+    static auto const PENABLED = CConfigValue<Config::INTEGER>{"plugin:hyprmodoro:enabled"};
 
-    if (!**PENABLED)
+    if (!*PENABLED)
         return false;
 
     const auto PWINDOW = m_pWindow.lock();
@@ -108,46 +109,46 @@ bool HyprmodoroDecoration::isValidInput() {
 }
 
 void HyprmodoroDecoration::setupButtons() {
-    static auto* const PBUTTONSIZE       = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:buttons:size")->getDataStaticPtr();
-    static auto* const PBUTTONFOREGROUND = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:buttons:color:foreground")->getDataStaticPtr();
-    static auto* const PBUTTONBACKGROUND = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:buttons:color:background")->getDataStaticPtr();
+    static auto const PBUTTONSIZE = CConfigValue<Config::INTEGER>{"plugin:hyprmodoro:buttons:size"};
+    static auto const PBUTTONFOREGROUND = CConfigValue<Config::INTEGER>{"plugin:hyprmodoro:buttons:color:foreground"};
+    static auto const PBUTTONBACKGROUND = CConfigValue<Config::INTEGER>{"plugin:hyprmodoro:buttons:color:background"};
 
     m_vButtons[ButtonAction::STOP]    = {.action = ButtonAction::STOP,
                                          .color =
-                                             Button::ButtonColor{.foreground = CHyprColor((uint64_t)**PBUTTONFOREGROUND), .background = CHyprColor((uint64_t)**PBUTTONBACKGROUND)},
-                                         .size = (float)**PBUTTONSIZE,
+                                             Button::ButtonColor{.foreground = CHyprColor((uint64_t)*PBUTTONFOREGROUND), .background = CHyprColor((uint64_t)*PBUTTONBACKGROUND)},
+                                         .size = (float)*PBUTTONSIZE,
                                          .icon = "⏹"};
     m_vButtons[ButtonAction::START]   = {.action = ButtonAction::START,
                                          .color =
-                                             Button::ButtonColor{.foreground = CHyprColor((uint64_t)**PBUTTONFOREGROUND), .background = CHyprColor((uint64_t)**PBUTTONBACKGROUND)},
-                                         .size = (float)**PBUTTONSIZE,
+                                             Button::ButtonColor{.foreground = CHyprColor((uint64_t)*PBUTTONFOREGROUND), .background = CHyprColor((uint64_t)*PBUTTONBACKGROUND)},
+                                         .size = (float)*PBUTTONSIZE,
                                          .icon = "⏵"};
     m_vButtons[ButtonAction::RESTART] = {.action = ButtonAction::RESTART,
                                          .color =
-                                             Button::ButtonColor{.foreground = CHyprColor((uint64_t)**PBUTTONFOREGROUND), .background = CHyprColor((uint64_t)**PBUTTONBACKGROUND)},
-                                         .size = (float)**PBUTTONSIZE,
+                                             Button::ButtonColor{.foreground = CHyprColor((uint64_t)*PBUTTONFOREGROUND), .background = CHyprColor((uint64_t)*PBUTTONBACKGROUND)},
+                                         .size = (float)*PBUTTONSIZE,
                                          .icon = "↻"};
 
-    g_pAnimationManager->createAnimation(0.0f, m_vButtons[ButtonAction::STOP].opacity, g_pConfigManager->getAnimationPropertyConfig("fadeOut"), AVARDAMAGE_ENTIRE);
-    g_pAnimationManager->createAnimation(0.0f, m_vButtons[ButtonAction::START].opacity, g_pConfigManager->getAnimationPropertyConfig("fadeOut"), AVARDAMAGE_ENTIRE);
-    g_pAnimationManager->createAnimation(0.0f, m_vButtons[ButtonAction::RESTART].opacity, g_pConfigManager->getAnimationPropertyConfig("fadeOut"), AVARDAMAGE_ENTIRE);
+    g_pAnimationManager->createAnimation(0.0f, m_vButtons[ButtonAction::STOP].opacity, Config::animationTree()->getAnimationPropertyConfig("fadeOut"), AVARDAMAGE_ENTIRE);
+    g_pAnimationManager->createAnimation(0.0f, m_vButtons[ButtonAction::START].opacity, Config::animationTree()->getAnimationPropertyConfig("fadeOut"), AVARDAMAGE_ENTIRE);
+    g_pAnimationManager->createAnimation(0.0f, m_vButtons[ButtonAction::RESTART].opacity, Config::animationTree()->getAnimationPropertyConfig("fadeOut"), AVARDAMAGE_ENTIRE);
 
-    g_pAnimationManager->createAnimation(Vector2D(0, 0), m_vButtons[ButtonAction::START].position, g_pConfigManager->getAnimationPropertyConfig("windowsMove"), AVARDAMAGE_ENTIRE);
-    g_pAnimationManager->createAnimation(Vector2D(0, 0), m_vButtons[ButtonAction::STOP].position, g_pConfigManager->getAnimationPropertyConfig("windowsMove"), AVARDAMAGE_ENTIRE);
-    g_pAnimationManager->createAnimation(Vector2D(0, 0), m_vButtons[ButtonAction::RESTART].position, g_pConfigManager->getAnimationPropertyConfig("windowsMove"),
+    g_pAnimationManager->createAnimation(Vector2D(0, 0), m_vButtons[ButtonAction::START].position, Config::animationTree()->getAnimationPropertyConfig("windowsMove"), AVARDAMAGE_ENTIRE);
+    g_pAnimationManager->createAnimation(Vector2D(0, 0), m_vButtons[ButtonAction::STOP].position, Config::animationTree()->getAnimationPropertyConfig("windowsMove"), AVARDAMAGE_ENTIRE);
+    g_pAnimationManager->createAnimation(Vector2D(0, 0), m_vButtons[ButtonAction::RESTART].position, Config::animationTree()->getAnimationPropertyConfig("windowsMove"),
                                          AVARDAMAGE_ENTIRE);
 }
 
 // Sends a notification using the configured method
 // Tries system notifications first if enabled, falls back to Hyprland API if they fail
 void sendNotification(const std::string& message, const CHyprColor& color) {
-    static auto* const PUSESYSNOTIF =
-        (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:notification:use_system_notifications")->getDataStaticPtr();
+    static auto const PUSESYSNOTIF =
+        CConfigValue<Config::INTEGER>{"plugin:hyprmodoro:notification:use_system_notifications"};
 
     bool notificationSent = false;
 
     // Try system notifications if configured
-    if (**PUSESYSNOTIF) {
+    if (*PUSESYSNOTIF) {
         notificationSent = sendLibnotifyNotification("Hyprmodoro", message);
         // Fall back to Hyprland API notifications
         if (!notificationSent) {

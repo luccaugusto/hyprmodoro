@@ -8,6 +8,7 @@
 
 #include "HyprmodoroPassElement.hpp"
 #include "globals.hpp"
+#include <hyprland/src/render/gl/GLTexture.hpp>
 
 enum ButtonAction {
     START,
@@ -70,8 +71,8 @@ class HyprmodoroDecoration : public IHyprWindowDecoration {
 
     CBox                           m_bAssignedGeometry;
     PHLWINDOWREF                   m_pWindow;
-    SP<CTexture>                   m_pTitleTex;
-    SP<CTexture>                   m_pProgressTex;
+    SP<Render::GL::CGLTexture>     m_pTitleTex;
+    SP<Render::GL::CGLTexture>     m_pProgressTex;
 
     DecorLayout                    m_layout;
     std::map<ButtonAction, Button> m_vButtons;

@@ -16,6 +16,9 @@ all:
 clean:
 	rm -f ./$(TARGET)
 
+load:
+	hyprctl plugin load $(CURDIR)/$(TARGET)
+
 reload:
 	hyprctl plugin unload $(CURDIR)/$(TARGET) && hyprctl plugin load $(CURDIR)/$(TARGET)
 

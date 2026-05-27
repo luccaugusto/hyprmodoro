@@ -7,14 +7,14 @@
 #include "pomodoro.hpp"
 
 void HyprmodoroDecoration::renderTitleBar(PHLMONITOR pMonitor, float alpha) {
-    static auto* const PTITLEFLOATINGWINDOW = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:title:floating_window")->getDataStaticPtr();
-    static auto* const PMINWINDOWWIDTH      = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:window:min_width")->getDataStaticPtr();
-    static auto* const PTITLEPOSITION       = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:title:position")->getDataStaticPtr();
-    static auto* const PTEXTSIZE            = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:text:size")->getDataStaticPtr();
-    static auto* const PTITLEMARGIN         = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:title:margin")->getDataStaticPtr();
-    static auto* const PTITLEOVERLAY        = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:title:overlay")->getDataStaticPtr();
+    static auto const PTITLEFLOATINGWINDOW = CConfigValue<Config::INTEGER>{"plugin:hyprmodoro:title:floating_window"};
+    static auto const PMINWINDOWWIDTH = CConfigValue<Config::INTEGER>{"plugin:hyprmodoro:window:min_width"};
+    static auto const PTITLEPOSITION = CConfigValue<std::string>{"plugin:hyprmodoro:title:position"};
+    static auto const PTEXTSIZE = CConfigValue<Config::INTEGER>{"plugin:hyprmodoro:text:size"};
+    static auto const PTITLEMARGIN = CConfigValue<Config::INTEGER>{"plugin:hyprmodoro:title:margin"};
+    static auto const PTITLEOVERLAY = CConfigValue<Config::INTEGER>{"plugin:hyprmodoro:title:overlay"};
 
-    if (!**PTITLEFLOATINGWINDOW && m_pWindow.lock()->m_isFloating)
+    if (!*PTITLEFLOATINGWINDOW && m_pWindow.lock()->m_isFloating)
         return;
 
     const auto windowBox = assignedBoxGlobal();
@@ -25,16 +25,16 @@ void HyprmodoroDecoration::renderTitleBar(PHLMONITOR pMonitor, float alpha) {
     const auto        yOffset    = m_hoverOffset->value();
     const std::string position   = std::string(*PTITLEPOSITION);
     const bool        isVertical = (position == "left" || position == "right");
-    const bool        isOverlay  = isVertical || **PTITLEOVERLAY;
+    const bool        isOverlay  = isVertical || *PTITLEOVERLAY;
 
     // For non-overlay horizontal positions, skip small windows
-    if (!isOverlay && windowBox.width <= **PMINWINDOWWIDTH)
+    if (!isOverlay && windowBox.width <= *PMINWINDOWWIDTH)
         return;
 
     if (isOverlay) {
         float containerW, containerH, containerX, containerY;
         if (isVertical) {
-            containerW = **PTITLEMARGIN * 2 + **PTEXTSIZE * 6;
+            containerW = *PTITLEMARGIN * 2 + *PTEXTSIZE * 6;
             containerH = yOffset;
             containerX = (position == "left") ? windowBox.x : (windowBox.x + windowBox.width - containerW);
             containerY = windowBox.y + (windowBox.height - containerH) / 2;
@@ -53,7 +53,7 @@ void HyprmodoroDecoration::renderTitleBar(PHLMONITOR pMonitor, float alpha) {
     m_layout.container.translate(-pMonitor->m_position).scale(pMonitor->m_scale).round();
 
     if (m_pTitleTex->m_texID == 0)
-        m_pTitleTex->allocate();
+        m_pTitleTex->allocate({m_layout.container.width, m_layout.container.height});
 
     const auto CAIROSURFACE = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, m_layout.container.width, m_layout.container.height);
 
@@ -94,24 +94,24 @@ void HyprmodoroDecoration::renderTitleBar(PHLMONITOR pMonitor, float alpha) {
 #endif
 
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_layout.container.width, m_layout.container.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, DATA);
-    g_pHyprOpenGL->renderTexture(m_pTitleTex, m_layout.container, {.a = alpha});
+    Render::GL::g_pHyprOpenGL->renderTexture(m_pTitleTex, m_layout.container, {.a = alpha});
 
     cairo_destroy(CAIRO);
     cairo_surface_destroy(CAIROSURFACE);
 }
 
 void HyprmodoroDecoration::renderTimer(cairo_t* cairo, const Vector2D& buffer, const float& scale) {
-    static auto* const PTEXTCOLOR     = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:text:color")->getDataStaticPtr();
-    static auto* const PFONT          = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:text:font")->getDataStaticPtr();
-    static auto* const PTEXTSIZE      = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:text:size")->getDataStaticPtr();
-    static auto* const PTEXTHOVER     = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:hover:text")->getDataStaticPtr();
-    static auto* const PRESTPREFIX    = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:text:rest_prefix")->getDataStaticPtr();
-    static auto* const PWORKPREFIX    = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:text:work_prefix")->getDataStaticPtr();
-    static auto* const PWAITINGPREFIX = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:text:waiting_prefix")->getDataStaticPtr();
+    static auto const PTEXTCOLOR = CConfigValue<Config::INTEGER>{"plugin:hyprmodoro:text:color"};
+    static auto const PFONT = CConfigValue<std::string>{"plugin:hyprmodoro:text:font"};
+    static auto const PTEXTSIZE = CConfigValue<Config::INTEGER>{"plugin:hyprmodoro:text:size"};
+    static auto const PTEXTHOVER = CConfigValue<Config::INTEGER>{"plugin:hyprmodoro:hover:text"};
+    static auto const PRESTPREFIX = CConfigValue<std::string>{"plugin:hyprmodoro:text:rest_prefix"};
+    static auto const PWORKPREFIX = CConfigValue<std::string>{"plugin:hyprmodoro:text:work_prefix"};
+    static auto const PWAITINGPREFIX = CConfigValue<std::string>{"plugin:hyprmodoro:text:waiting_prefix"};
 
-    const auto         textSize      = **PTEXTSIZE * scale;
+    const auto         textSize      = *PTEXTSIZE * scale;
     const auto         pomodoroState = g_pGlobalState->pomodoroSession->getState();
-    const auto         textHover     = **PTEXTHOVER;
+    const auto         textHover     = *PTEXTHOVER;
     const auto         timeText      = g_pGlobalState->pomodoroSession->getFormattedTime();
 
     std::string displayText;
@@ -123,7 +123,7 @@ void HyprmodoroDecoration::renderTimer(cairo_t* cairo, const Vector2D& buffer, c
         displayText = std::string(*PWORKPREFIX) + " " + timeText;
     }
     
-    CHyprColor         textColor   = CHyprColor((uint64_t)**PTEXTCOLOR);
+    CHyprColor         textColor   = CHyprColor((uint64_t)*PTEXTCOLOR);
 
     if (pomodoroState == State::STOPPED)
         *m_textOpacity = 0.0f;
@@ -138,7 +138,7 @@ void HyprmodoroDecoration::renderTimer(cairo_t* cairo, const Vector2D& buffer, c
     PangoLayout* layout = pango_cairo_create_layout(cairo);
     pango_layout_set_text(layout, displayText.c_str(), -1);
 
-    PangoFontDescription* fontDesc = pango_font_description_from_string(*PFONT);
+    PangoFontDescription* fontDesc = pango_font_description_from_string((*PFONT).c_str());
     pango_font_description_set_size(fontDesc, textSize * PANGO_SCALE);
     pango_layout_set_font_description(layout, fontDesc);
     int layoutWidth, layoutHeight;
@@ -160,21 +160,21 @@ void HyprmodoroDecoration::renderTimer(cairo_t* cairo, const Vector2D& buffer, c
 }
 
 void HyprmodoroDecoration::renderButtons(cairo_t* cairo, const Vector2D& buffer, const float& scale) {
-    static auto* const PFONT              = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:text:font")->getDataStaticPtr();
-    static auto* const PBUTTONSIZE        = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:buttons:size")->getDataStaticPtr();
-    static auto* const PTEXTSIZE          = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:text:size")->getDataStaticPtr();
-    static auto* const PSPACING           = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:title:spacing")->getDataStaticPtr();
-    static auto* const PBUTTONSFOREGROUND = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:buttons:color:foreground")->getDataStaticPtr();
-    static auto* const PBUTTONSBACKGROUND = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:buttons:color:background")->getDataStaticPtr();
-    static auto* const PBUTTONHOVER       = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:hover:buttons")->getDataStaticPtr();
+    static auto const PFONT = CConfigValue<std::string>{"plugin:hyprmodoro:text:font"};
+    static auto const PBUTTONSIZE = CConfigValue<Config::INTEGER>{"plugin:hyprmodoro:buttons:size"};
+    static auto const PTEXTSIZE = CConfigValue<Config::INTEGER>{"plugin:hyprmodoro:text:size"};
+    static auto const PSPACING = CConfigValue<Config::INTEGER>{"plugin:hyprmodoro:title:spacing"};
+    static auto const PBUTTONSFOREGROUND = CConfigValue<Config::INTEGER>{"plugin:hyprmodoro:buttons:color:foreground"};
+    static auto const PBUTTONSBACKGROUND = CConfigValue<Config::INTEGER>{"plugin:hyprmodoro:buttons:color:background"};
+    static auto const PBUTTONHOVER = CConfigValue<Config::INTEGER>{"plugin:hyprmodoro:hover:buttons"};
 
     const auto         currentState      = g_pGlobalState->pomodoroSession->getState();
     const std::string  PLAYICON          = g_pGlobalState->pomodoroSession->isPaused() || currentState == State::STOPPED ? "⏵" : "⏸";
     m_vButtons[ButtonAction::START].icon = PLAYICON;
 
-    const auto     buttonSize   = **PBUTTONSIZE * scale;
-    const auto     buttonHover  = **PBUTTONHOVER;
-    const auto     offset       = (**PSPACING + **PTEXTSIZE) * scale;
+    const auto     buttonSize   = *PBUTTONSIZE * scale;
+    const auto     buttonHover  = *PBUTTONHOVER;
+    const auto     offset       = (*PSPACING + *PTEXTSIZE) * scale;
     const auto     spacing      = buttonSize * 1.5f;
     const Vector2D centerCoords = Vector2D(buffer.x / 2, offset + (buttonSize / 2.0f));
 
@@ -209,8 +209,8 @@ void HyprmodoroDecoration::renderButtons(cairo_t* cairo, const Vector2D& buffer,
             *button.opacity = (!buttonHover || m_isNearContainer) ? 1.0f : 0.0f;
 
         button.size             = buttonSize;
-        button.color.foreground = CHyprColor((uint64_t)**PBUTTONSFOREGROUND);
-        button.color.background = CHyprColor((uint64_t)**PBUTTONSBACKGROUND);
+        button.color.foreground = CHyprColor((uint64_t)*PBUTTONSFOREGROUND);
+        button.color.background = CHyprColor((uint64_t)*PBUTTONSBACKGROUND);
         button.hitbox           = CBox(button.position->value().x, button.position->value().y, buttonSize, buttonSize);
 
         const Vector2D centerButton = Vector2D(button.hitbox.x + button.hitbox.width / 2, button.hitbox.y + button.hitbox.height / 2);
@@ -225,7 +225,7 @@ void HyprmodoroDecoration::renderButtons(cairo_t* cairo, const Vector2D& buffer,
         PangoLayout* iconLayout = pango_cairo_create_layout(cairo);
         pango_layout_set_text(iconLayout, button.icon.c_str(), -1);
 
-        PangoFontDescription* iconFont = pango_font_description_from_string(*PFONT);
+        PangoFontDescription* iconFont = pango_font_description_from_string((*PFONT).c_str());
         pango_font_description_set_size(iconFont, (button.size * 0.5f) * PANGO_SCALE);
         pango_layout_set_font_description(iconLayout, iconFont);
 
@@ -248,10 +248,10 @@ void HyprmodoroDecoration::renderButtons(cairo_t* cairo, const Vector2D& buffer,
 }
 
 void HyprmodoroDecoration::renderProgressBorder(PHLMONITOR pMonitor, float alpha) {
-    static auto* const BORDERCOLOR          = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:border:color")->getDataStaticPtr();
-    static auto* const BORDERFLOATINGWINDOW = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:border:floating_window")->getDataStaticPtr();
-    static auto* const PTITLEPOSITION       = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprmodoro:title:position")->getDataStaticPtr();
-    if (!**BORDERFLOATINGWINDOW && m_pWindow.lock()->m_isFloating)
+    static auto const BORDERCOLOR = CConfigValue<Config::INTEGER>{"plugin:hyprmodoro:border:color"};
+    static auto const BORDERFLOATINGWINDOW = CConfigValue<Config::INTEGER>{"plugin:hyprmodoro:border:floating_window"};
+    static auto const PTITLEPOSITION = CConfigValue<std::string>{"plugin:hyprmodoro:title:position"};
+    if (!*BORDERFLOATINGWINDOW && m_pWindow.lock()->m_isFloating)
         return;
 
     const auto        SESSIONPROGRESS = g_pGlobalState->pomodoroSession->getProgress();
@@ -280,7 +280,7 @@ void HyprmodoroDecoration::renderProgressBorder(PHLMONITOR pMonitor, float alpha
     const float blx = cc + cb, bly = h - cc - cb;
     const float brx = w - cc - cb, bry = h - cc - cb;
 
-    const CHyprColor borderColor  = CHyprColor(**BORDERCOLOR);
+    const CHyprColor borderColor  = CHyprColor(*BORDERCOLOR);
     const auto       CAIROSURFACE = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, w, h);
     const auto       CAIRO        = cairo_create(CAIROSURFACE);
     const double     dashes[]     = {targetLength, perimeter};
@@ -452,7 +452,7 @@ void HyprmodoroDecoration::renderProgressBorder(PHLMONITOR pMonitor, float alpha
     }
 
     if (m_pProgressTex->m_texID == 0) {
-        m_pProgressTex->allocate();
+        m_pProgressTex->allocate({w, h});
     }
 
     cairo_set_dash(CAIRO, NULL, 0, 0);
@@ -470,7 +470,7 @@ void HyprmodoroDecoration::renderProgressBorder(PHLMONITOR pMonitor, float alpha
 #endif
 
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, windowBox.width, windowBox.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, DATA);
-    g_pHyprOpenGL->renderTexture(m_pProgressTex, windowBox, {.a = alpha});
+    Render::GL::g_pHyprOpenGL->renderTexture(m_pProgressTex, windowBox, {.a = alpha});
 
     cairo_destroy(CAIRO);
     cairo_surface_destroy(CAIROSURFACE);
