@@ -1,10 +1,11 @@
 #include <hyprland/src/config/shared/animation/AnimationTree.hpp>
 #include <hyprland/src/managers/input/InputManager.hpp>
 #include <hyprland/src/protocols/LayerShell.hpp>
-#include <hyprland/src/managers/animation/AnimationManager.hpp>
+#include <hyprland/src/animation/AnimationManager.hpp>
 #include <hyprland/src/config/ConfigManager.hpp>
 #include <hyprland/src/Compositor.hpp>
 #include <hyprland/src/desktop/state/FocusState.hpp>
+#include <hyprland/src/desktop/state/ViewState.hpp>
 
 #include <sys/stat.h>
 #include <unistd.h>
@@ -79,7 +80,7 @@ bool HyprmodoroDecoration::isValidInput() {
         (g_pSeatManager->m_seatGrab && !g_pSeatManager->m_seatGrab->accepts(m_pWindow->resource())))
         return false;
 
-    const auto WINDOWATCURSOR = g_pCompositor->vectorToWindowUnified(g_pInputManager->getMouseCoordsInternal(), Desktop::View::RESERVED_EXTENTS | Desktop::View::INPUT_EXTENTS | Desktop::View::ALLOW_FLOATING);
+    const auto WINDOWATCURSOR = Desktop::viewState()->hitTest().windowAt(g_pInputManager->getMouseCoordsInternal(), Desktop::View::RESERVED_EXTENTS | Desktop::View::INPUT_EXTENTS | Desktop::View::ALLOW_FLOATING);
 
     if (WINDOWATCURSOR != PWINDOW && PWINDOW != Desktop::focusState()->window())
         return false;
@@ -90,14 +91,15 @@ bool HyprmodoroDecoration::isValidInput() {
     Vector2D surfaceCoords;
 
     // Check top layer
-    g_pCompositor->vectorToLayerSurface(g_pInputManager->getMouseCoordsInternal(), &PMONITOR->m_layerSurfaceLayers[ZWLR_LAYER_SHELL_V1_LAYER_TOP], &surfaceCoords, &foundSurface);
+    Desktop::viewState()->hitTest().layerSurfaceAt(g_pInputManager->getMouseCoordsInternal(), &PMONITOR->m_layerSurfaceLayers[ZWLR_LAYER_SHELL_V1_LAYER_TOP], &surfaceCoords,
+                                                   &foundSurface);
 
     if (foundSurface)
         return false;
 
     // Check overlay layer
-    g_pCompositor->vectorToLayerSurface(g_pInputManager->getMouseCoordsInternal(), &PMONITOR->m_layerSurfaceLayers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY], &surfaceCoords,
-                                        &foundSurface);
+    Desktop::viewState()->hitTest().layerSurfaceAt(g_pInputManager->getMouseCoordsInternal(), &PMONITOR->m_layerSurfaceLayers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY], &surfaceCoords,
+                                                   &foundSurface);
 
     if (foundSurface)
         return false;
@@ -129,13 +131,13 @@ void HyprmodoroDecoration::setupButtons() {
                                          .size = (float)*PBUTTONSIZE,
                                          .icon = "↻"};
 
-    g_pAnimationManager->createAnimation(0.0f, m_vButtons[ButtonAction::STOP].opacity, Config::animationTree()->getAnimationPropertyConfig("fadeOut"), AVARDAMAGE_ENTIRE);
-    g_pAnimationManager->createAnimation(0.0f, m_vButtons[ButtonAction::START].opacity, Config::animationTree()->getAnimationPropertyConfig("fadeOut"), AVARDAMAGE_ENTIRE);
-    g_pAnimationManager->createAnimation(0.0f, m_vButtons[ButtonAction::RESTART].opacity, Config::animationTree()->getAnimationPropertyConfig("fadeOut"), AVARDAMAGE_ENTIRE);
+    Animation::mgr()->createAnimation(0.0f, m_vButtons[ButtonAction::STOP].opacity, Config::animationTree()->getAnimationPropertyConfig("fadeOut"), AVARDAMAGE_ENTIRE);
+    Animation::mgr()->createAnimation(0.0f, m_vButtons[ButtonAction::START].opacity, Config::animationTree()->getAnimationPropertyConfig("fadeOut"), AVARDAMAGE_ENTIRE);
+    Animation::mgr()->createAnimation(0.0f, m_vButtons[ButtonAction::RESTART].opacity, Config::animationTree()->getAnimationPropertyConfig("fadeOut"), AVARDAMAGE_ENTIRE);
 
-    g_pAnimationManager->createAnimation(Vector2D(0, 0), m_vButtons[ButtonAction::START].position, Config::animationTree()->getAnimationPropertyConfig("windowsMove"), AVARDAMAGE_ENTIRE);
-    g_pAnimationManager->createAnimation(Vector2D(0, 0), m_vButtons[ButtonAction::STOP].position, Config::animationTree()->getAnimationPropertyConfig("windowsMove"), AVARDAMAGE_ENTIRE);
-    g_pAnimationManager->createAnimation(Vector2D(0, 0), m_vButtons[ButtonAction::RESTART].position, Config::animationTree()->getAnimationPropertyConfig("windowsMove"),
+    Animation::mgr()->createAnimation(Vector2D(0, 0), m_vButtons[ButtonAction::START].position, Config::animationTree()->getAnimationPropertyConfig("windowsMove"), AVARDAMAGE_ENTIRE);
+    Animation::mgr()->createAnimation(Vector2D(0, 0), m_vButtons[ButtonAction::STOP].position, Config::animationTree()->getAnimationPropertyConfig("windowsMove"), AVARDAMAGE_ENTIRE);
+    Animation::mgr()->createAnimation(Vector2D(0, 0), m_vButtons[ButtonAction::RESTART].position, Config::animationTree()->getAnimationPropertyConfig("windowsMove"),
                                          AVARDAMAGE_ENTIRE);
 }
 

@@ -4,7 +4,7 @@
 #include <string>
 #include <functional>
 
-enum State {
+enum PomodoroState {
     STOPPED,
     WORKING,
     RESTING,
@@ -34,12 +34,12 @@ class Pomodoro {
     int         getRemainingTime() const;
     std::string getFormattedTime() const;
     float       getProgress();
-    State       getState();
-    State       getLastState() const;
-    void        setState(State newState);
+    PomodoroState       getState();
+    PomodoroState       getLastState() const;
+    void        setState(PomodoroState newState);
     void        setSessionLength(int length);
     void        setRestLength(int length);
-    void        setOnSessionEndCallback(std::function<void(State)> callback);
+    void        setOnSessionEndCallback(std::function<void(PomodoroState)> callback);
     void        setAutoTransition(bool autoTransition);
     bool        getAutoTransition() const;
 
@@ -52,8 +52,8 @@ class Pomodoro {
     int                                   m_restLength;
     bool                                  m_pause;
     bool                                  m_autoTransition;
-    State                                 m_currentState;
-    State                                 m_lastState;
+    PomodoroState                                 m_currentState;
+    PomodoroState                                 m_lastState;
     
-    std::function<void(State)>            m_onSessionEnd;
+    std::function<void(PomodoroState)>            m_onSessionEnd;
 };

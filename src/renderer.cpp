@@ -115,9 +115,9 @@ void HyprmodoroDecoration::renderTimer(cairo_t* cairo, const Vector2D& buffer, c
     const auto         timeText      = g_pGlobalState->pomodoroSession->getFormattedTime();
 
     std::string displayText;
-    if (pomodoroState == State::RESTING) {
+    if (pomodoroState == PomodoroState::RESTING) {
         displayText = std::string(*PRESTPREFIX) + " " + timeText;
-    } else if (pomodoroState == State::WAITING_FOR_REST || pomodoroState == State::WAITING_FOR_WORK) {
+    } else if (pomodoroState == PomodoroState::WAITING_FOR_REST || pomodoroState == PomodoroState::WAITING_FOR_WORK) {
         displayText = std::string(*PWAITINGPREFIX) + " " + timeText;
     } else {
         displayText = std::string(*PWORKPREFIX) + " " + timeText;
@@ -125,7 +125,7 @@ void HyprmodoroDecoration::renderTimer(cairo_t* cairo, const Vector2D& buffer, c
     
     CHyprColor         textColor   = CHyprColor((uint64_t)*PTEXTCOLOR);
 
-    if (pomodoroState == State::STOPPED)
+    if (pomodoroState == PomodoroState::STOPPED)
         *m_textOpacity = 0.0f;
     else if (textHover)
         *m_textOpacity = m_isNearContainer ? 1.0f : 0.0f;
@@ -169,7 +169,7 @@ void HyprmodoroDecoration::renderButtons(cairo_t* cairo, const Vector2D& buffer,
     static auto const PBUTTONHOVER = CConfigValue<Config::INTEGER>{"plugin:hyprmodoro:hover:buttons"};
 
     const auto         currentState      = g_pGlobalState->pomodoroSession->getState();
-    const std::string  PLAYICON          = g_pGlobalState->pomodoroSession->isPaused() || currentState == State::STOPPED ? "⏵" : "⏸";
+    const std::string  PLAYICON          = g_pGlobalState->pomodoroSession->isPaused() || currentState == PomodoroState::STOPPED ? "⏵" : "⏸";
     m_vButtons[ButtonAction::START].icon = PLAYICON;
 
     const auto     buttonSize   = *PBUTTONSIZE * scale;
@@ -194,7 +194,7 @@ void HyprmodoroDecoration::renderButtons(cairo_t* cairo, const Vector2D& buffer,
     m_vButtons[ButtonAction::STOP].visible    = true;
     m_vButtons[ButtonAction::RESTART].visible = true;
 
-    if (currentState == State::STOPPED) {
+    if (currentState == PomodoroState::STOPPED) {
         // only render start button
         setPosition(m_vButtons[ButtonAction::START].position, Vector2D(centerCoords.x - buttonSize / 2, centerCoords.y));
         m_vButtons[ButtonAction::STOP].visible    = false;

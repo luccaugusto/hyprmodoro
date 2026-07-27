@@ -3,6 +3,8 @@
 #include <hyprland/src/render/Renderer.hpp>
 #include <hyprland/src/Compositor.hpp>
 #include <hyprland/src/event/EventBus.hpp>
+#include <hyprland/src/desktop/state/ViewState.hpp>
+#include <hyprland/src/state/MonitorState.hpp>
 
 #include <string>
 #include <hyprland/src/config/values/ConfigValues.hpp>
@@ -224,7 +226,7 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     // Apply autoTransition setting with safety check
     g_pGlobalState->pomodoroSession->setAutoTransition(getEffectiveAutoTransition());
 
-    g_pGlobalState->pomodoroSession->setOnSessionEndCallback([](State endedState) {
+    g_pGlobalState->pomodoroSession->setOnSessionEndCallback([](PomodoroState endedState) {
         static auto const PSOUNDPLAYER = CConfigValue<std::string>{"plugin:hyprmodoro:sound:player"};
         static auto const PWORKENDFILE = CConfigValue<std::string>{"plugin:hyprmodoro:sound:work_end"};
         static auto const PRESTENDFILE = CConfigValue<std::string>{"plugin:hyprmodoro:sound:rest_end"};
@@ -237,7 +239,7 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
         bool soundPlayed      = false;
         bool soundConfigured  = false;
         // Try to play sound if player and sound files are configured
-        std::string soundFile = (endedState == State::WORKING) ? std::string(*PWORKENDFILE) : std::string(*PRESTENDFILE);
+        std::string soundFile = (endedState == PomodoroState::WORKING) ? std::string(*PWORKENDFILE) : std::string(*PRESTENDFILE);
         std::string player    = std::string(*PSOUNDPLAYER);
 
         if (!player.empty() && !soundFile.empty()) {
@@ -247,13 +249,13 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
 
         // Show notification if enabled, or as fallback if sound was configured but failed to play
         if (*PNOTIFENABLED || (soundConfigured && !soundPlayed)) {
-            std::string message = (endedState == State::WORKING) ? std::string(*PWORKENDNOTIF) : std::string(*PRESTENDNOTIF);
-            CHyprColor  color   = (endedState == State::WORKING) ? CHyprColor{0.2, 1.0, 0.2, 1.0} : CHyprColor{0.2, 0.6, 1.0, 1.0};
+            std::string message = (endedState == PomodoroState::WORKING) ? std::string(*PWORKENDNOTIF) : std::string(*PRESTENDNOTIF);
+            CHyprColor  color   = (endedState == PomodoroState::WORKING) ? CHyprColor{0.2, 1.0, 0.2, 1.0} : CHyprColor{0.2, 0.6, 1.0, 1.0};
             sendNotification(message, color);
         }
 
         // custom callback execution
-        const std::string& exec_commands = (endedState == State::WORKING) ? *PEXECWORKEND : *PEXECRESTEND;
+        const std::string& exec_commands = (endedState == PomodoroState::WORKING) ? *PEXECWORKEND : *PEXECRESTEND;
 
         if (!exec_commands.empty()) {
             std::stringstream ss(exec_commands);
@@ -275,7 +277,7 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
 
     static auto openWindowCallback = Event::bus()->m_events.window.open.listen([](PHLWINDOW pWindow) { onWindowOpen(nullptr, pWindow); });
 
-    for (auto& window : g_pCompositor->m_windows) {
+    for (auto& window : Desktop::viewState()->windows()) {
         if (window->isHidden() || !window->m_isMapped)
             continue;
         onWindowOpen(nullptr, window);
@@ -285,7 +287,7 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
 }
 
 APICALL EXPORT void PLUGIN_EXIT() {
-    for (auto& m : g_pCompositor->m_monitors)
+    for (auto& m : State::monitorState()->monitors())
         m->m_scheduledRecalc = true;
 
     g_pHyprRenderer->m_renderPass.removeAllOfType("HyprmodoroPassElement");

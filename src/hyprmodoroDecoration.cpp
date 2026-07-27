@@ -1,9 +1,10 @@
 #include <hyprland/src/config/shared/animation/AnimationTree.hpp>
 #include <hyprland/src/Compositor.hpp>
 #include <hyprland/src/render/Renderer.hpp>
-#include <hyprland/src/managers/animation/AnimationManager.hpp>
+#include <hyprland/src/animation/AnimationManager.hpp>
 #include <hyprland/src/config/ConfigManager.hpp>
 #include <hyprland/src/desktop/state/FocusState.hpp>
+#include <hyprland/src/managers/fullscreen/FullscreenController.hpp>
 
 #include "hyprmodoroDecoration.hpp"
 #include "HyprmodoroPassElement.hpp"
@@ -16,8 +17,8 @@ HyprmodoroDecoration::HyprmodoroDecoration(PHLWINDOW pWindow) : IHyprWindowDecor
 
     m_pMouseButtonCallback = Event::bus()->m_events.input.mouse.button.listen([this](IPointer::SButtonEvent e, Event::SCallbackInfo& info) { onMouseDown(info, e); });
 
-    g_pAnimationManager->createAnimation(25.0f, m_hoverOffset, Config::animationTree()->getAnimationPropertyConfig("windowsMove"), AVARDAMAGE_ENTIRE);
-    g_pAnimationManager->createAnimation(0.0f, m_textOpacity, Config::animationTree()->getAnimationPropertyConfig("fadeOut"), AVARDAMAGE_ENTIRE);
+    Animation::mgr()->createAnimation(25.0f, m_hoverOffset, Config::animationTree()->getAnimationPropertyConfig("windowsMove"), AVARDAMAGE_ENTIRE);
+    Animation::mgr()->createAnimation(0.0f, m_textOpacity, Config::animationTree()->getAnimationPropertyConfig("fadeOut"), AVARDAMAGE_ENTIRE);
 }
 
 HyprmodoroDecoration::~HyprmodoroDecoration() {
@@ -58,7 +59,7 @@ SDecorationPositioningInfo HyprmodoroDecoration::getPositioningInfo() {
     if (!*PRESERVESPACEALL && !*PTITLEALLWINDOWS && PWINDOW != PLASTWINDOW) // only focused windows
         return info;
 
-    if (PWINDOW->m_size.x <= *PMINWINDOWWIDTH)
+    if (PWINDOW->size(Desktop::View::IGeometric::GEOMETRIC_GOAL).x <= *PMINWINDOWWIDTH)
         return info;
 
     const auto        textSize      = *PTEXTSIZE;
@@ -141,18 +142,18 @@ void HyprmodoroDecoration::onMouseDown(Event::SCallbackInfo& info, IPointer::SBu
     static auto const PSKIPONCLICK = CConfigValue<Config::INTEGER>{"plugin:hyprmodoro:text:skip_on_click"};
 
     const auto         currentState = g_pGlobalState->pomodoroSession->getState();
-    const auto         isRunning    = currentState == State::WORKING || currentState == State::RESTING;
+    const auto         isRunning    = currentState == PomodoroState::WORKING || currentState == PomodoroState::RESTING;
 
     if (m_layout.title.containsPoint(cursorPos) && *PSKIPONCLICK) {
         // If waiting for rest, start rest session
-        if (currentState == State::WAITING_FOR_REST) {
+        if (currentState == PomodoroState::WAITING_FOR_REST) {
             g_pGlobalState->pomodoroSession->startRest();
             sendNotification("Starting rest", CHyprColor{0.0, 1.0, 0.0, 1.0});
             return;
         }
         
         // If waiting for work, start work session
-        if (currentState == State::WAITING_FOR_WORK) {
+        if (currentState == PomodoroState::WAITING_FOR_WORK) {
             g_pGlobalState->pomodoroSession->start();
             sendNotification("Starting work", CHyprColor{0.0, 1.0, 0.0, 1.0});
             return;
@@ -160,7 +161,7 @@ void HyprmodoroDecoration::onMouseDown(Event::SCallbackInfo& info, IPointer::SBu
         
         // If session is running, allow skip
         if (isRunning) {
-            const std::string sessionType = (currentState == State::WORKING) ? "work" : "rest";
+            const std::string sessionType = (currentState == PomodoroState::WORKING) ? "work" : "rest";
             sendNotification(std::format("Skipped {}", sessionType), CHyprColor{0.0, 1.0, 0.0, 1.0});
             g_pGlobalState->pomodoroSession->skip();
             return;
@@ -179,7 +180,7 @@ void HyprmodoroDecoration::onMouseDown(Event::SCallbackInfo& info, IPointer::SBu
 void HyprmodoroDecoration::handleButtonClick(ButtonAction buttonAction) {
     const auto currentState = g_pGlobalState->pomodoroSession->getState();
     if (buttonAction == ButtonAction::START) {
-        if ((currentState == State::WORKING || currentState == State::RESTING) && !g_pGlobalState->pomodoroSession->isPaused())
+        if ((currentState == PomodoroState::WORKING || currentState == PomodoroState::RESTING) && !g_pGlobalState->pomodoroSession->isPaused())
             g_pGlobalState->pomodoroSession->pause();
         else if (g_pGlobalState->pomodoroSession->isPaused())
             g_pGlobalState->pomodoroSession->resume();
@@ -238,7 +239,8 @@ void HyprmodoroDecoration::drawPass(PHLMONITOR pMonitor, const float& a) {
 
     if (*PTITLEENABLED) {
 
-        if ((*PTITLEALLWINDOWS && (!pMonitor->m_activeWorkspace->m_hasFullscreenWindow || PWINDOW->isFullscreen())) || PWINDOW == PLASTWINDOW) {
+        if ((*PTITLEALLWINDOWS && (!Fullscreen::controller()->hasFullscreen(pMonitor->m_activeWorkspace) || Fullscreen::controller()->isFullscreen(PWINDOW))) ||
+            PWINDOW == PLASTWINDOW) {
             renderTitleBar(pMonitor, a);
         }
     }
