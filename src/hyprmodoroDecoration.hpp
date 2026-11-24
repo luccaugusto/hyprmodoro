@@ -44,7 +44,7 @@ class HyprmodoroDecoration : public IHyprWindowDecoration {
     virtual ~HyprmodoroDecoration();
     virtual SDecorationPositioningInfo getPositioningInfo();
     virtual void                       onPositioningReply(const SDecorationPositioningReply& reply);
-    virtual void                       draw(PHLMONITOR, float const& a);
+    virtual void                       draw(Render::CRenderContext& ctx, PHLMONITOR, float const& a, const Render::SWindowRenderPresentation& presentation);
     virtual eDecorationType            getDecorationType();
     virtual void                       updateWindow(PHLWINDOW);
     virtual void                       damageEntire();
@@ -57,9 +57,9 @@ class HyprmodoroDecoration : public IHyprWindowDecoration {
   private:
     CBox                           assignedBoxGlobal();
     void                           setupButtons();
-    void                           drawPass(PHLMONITOR, float const& a);
-    void                           renderProgressBorder(PHLMONITOR pMonitor, float alpha);
-    void                           renderTitleBar(PHLMONITOR pMonitor, float alpha);
+    void                           drawPass(Render::CRenderContext& ctx, PHLMONITOR, float const& a);
+    void                           renderProgressBorder(Render::CRenderContext& ctx, PHLMONITOR pMonitor, float alpha);
+    void                           renderTitleBar(Render::CRenderContext& ctx, PHLMONITOR pMonitor, float alpha);
     void                           renderButtons(cairo_t* cairo, const Vector2D& buffer, const float& scale);
     void                           renderTimer(cairo_t* cairo, const Vector2D& buffer, const float& scale);
     void                           updateHoverOffset();

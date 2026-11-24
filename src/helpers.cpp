@@ -6,6 +6,9 @@
 #include <hyprland/src/Compositor.hpp>
 #include <hyprland/src/desktop/state/FocusState.hpp>
 #include <hyprland/src/desktop/state/ViewState.hpp>
+#include <hyprland/src/desktop/state/ViewHitTester.hpp>
+#include <hyprland/src/desktop/view/window/Window.hpp>
+#include <hyprland/src/managers/SeatManager.hpp>
 
 #include <sys/stat.h>
 #include <unistd.h>
@@ -76,11 +79,13 @@ bool HyprmodoroDecoration::isValidInput() {
 
     const auto PWINDOW = m_pWindow.lock();
 
-    if (!m_pWindow->m_workspace || !validMapped(m_pWindow) || !m_pWindow->m_workspace->isVisible() || !g_pInputManager->m_exclusiveLSes.empty() ||
+    if (!m_pWindow->m_workspace || !validMapped(m_pWindow) || !m_pWindow->m_workspace->visible() || !g_pInputManager->m_exclusiveKeyboardLSes.empty() ||
         (g_pSeatManager->m_seatGrab && !g_pSeatManager->m_seatGrab->accepts(m_pWindow->resource())))
         return false;
 
-    const auto WINDOWATCURSOR = Desktop::viewState()->hitTest().windowAt(g_pInputManager->getMouseCoordsInternal(), Desktop::View::RESERVED_EXTENTS | Desktop::View::INPUT_EXTENTS | Desktop::View::ALLOW_FLOATING);
+    Desktop::CViewHitTester hitTester{*Desktop::viewState()};
+
+    const auto WINDOWATCURSOR = hitTester.windowAt(g_pInputManager->getMouseCoordsInternal(), Desktop::View::RESERVED_EXTENTS | Desktop::View::INPUT_EXTENTS | Desktop::View::ALLOW_FLOATING);
 
     if (WINDOWATCURSOR != PWINDOW && PWINDOW != Desktop::focusState()->window())
         return false;
@@ -91,14 +96,14 @@ bool HyprmodoroDecoration::isValidInput() {
     Vector2D surfaceCoords;
 
     // Check top layer
-    Desktop::viewState()->hitTest().layerSurfaceAt(g_pInputManager->getMouseCoordsInternal(), &PMONITOR->m_layerSurfaceLayers[ZWLR_LAYER_SHELL_V1_LAYER_TOP], &surfaceCoords,
+    hitTester.layerSurfaceAt(g_pInputManager->getMouseCoordsInternal(), &PMONITOR->m_layerSurfaceLayers[ZWLR_LAYER_SHELL_V1_LAYER_TOP], &surfaceCoords,
                                                    &foundSurface);
 
     if (foundSurface)
         return false;
 
     // Check overlay layer
-    Desktop::viewState()->hitTest().layerSurfaceAt(g_pInputManager->getMouseCoordsInternal(), &PMONITOR->m_layerSurfaceLayers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY], &surfaceCoords,
+    hitTester.layerSurfaceAt(g_pInputManager->getMouseCoordsInternal(), &PMONITOR->m_layerSurfaceLayers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY], &surfaceCoords,
                                                    &foundSurface);
 
     if (foundSurface)

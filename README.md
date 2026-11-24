@@ -102,26 +102,29 @@ plugin:hyprmodoro:window:padding              # Window padding (default: 0)
 ```
 
 
-## Dispatchers
+## Lua Functions
 
-```ini
-# Start timer
-hyprctl dispatch hyprmodoro:start
+Since Hyprland 0.57, plugin dispatchers are exposed as Lua functions under `hl.plugin.hyprmodoro`.
 
-# Stop timer
-hyprctl dispatch hyprmodoro:stop
+```lua
+hl.plugin.hyprmodoro.start()      -- Start timer
+hl.plugin.hyprmodoro.stop()       -- Stop timer
+hl.plugin.hyprmodoro.pause()      -- Pause/resume timer
+hl.plugin.hyprmodoro.skip()       -- Skip current session
+hl.plugin.hyprmodoro.set(25)      -- Set custom work duration (in minutes)
+hl.plugin.hyprmodoro.setRest(5)   -- Set custom rest duration (in minutes)
+```
 
-# Pause/resume timer
-hyprctl dispatch hyprmodoro:pause
+Bind them in `hyprland.lua`:
 
-# Skip current session
-hyprctl dispatch hyprmodoro:skip
+```lua
+hl.bind("SUPER + P", function() hl.plugin.hyprmodoro.pause() end)
+```
 
-# Set custom work duration (in minutes)
-hyprctl dispatch hyprmodoro:set 25
+Or call them from a shell:
 
-# Set custom rest duration (in minutes)
-hyprctl dispatch hyprmodoro:setRest 5
+```bash
+hyprctl eval 'hl.plugin.hyprmodoro.start()'
 ```
 
 ## HyprCtl Commands

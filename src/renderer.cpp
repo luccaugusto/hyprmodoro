@@ -1,4 +1,5 @@
-#include <hyprland/src/desktop/view/Window.hpp>
+#include <hyprland/src/desktop/view/window/Window.hpp>
+#include <hyprland/src/desktop/view/window/WindowPresentation.hpp>
 
 #include <cairo/cairo.h>
 #include <pango/pangocairo.h>
@@ -6,7 +7,7 @@
 #include "hyprmodoroDecoration.hpp"
 #include "pomodoro.hpp"
 
-void HyprmodoroDecoration::renderTitleBar(PHLMONITOR pMonitor, float alpha) {
+void HyprmodoroDecoration::renderTitleBar(Render::CRenderContext& ctx, PHLMONITOR pMonitor, float alpha) {
     static auto const PTITLEFLOATINGWINDOW = CConfigValue<Config::INTEGER>{"plugin:hyprmodoro:title:floating_window"};
     static auto const PMINWINDOWWIDTH = CConfigValue<Config::INTEGER>{"plugin:hyprmodoro:window:min_width"};
     static auto const PTITLEPOSITION = CConfigValue<std::string>{"plugin:hyprmodoro:title:position"};
@@ -14,7 +15,7 @@ void HyprmodoroDecoration::renderTitleBar(PHLMONITOR pMonitor, float alpha) {
     static auto const PTITLEMARGIN = CConfigValue<Config::INTEGER>{"plugin:hyprmodoro:title:margin"};
     static auto const PTITLEOVERLAY = CConfigValue<Config::INTEGER>{"plugin:hyprmodoro:title:overlay"};
 
-    if (!*PTITLEFLOATINGWINDOW && m_pWindow.lock()->m_isFloating)
+    if (!*PTITLEFLOATINGWINDOW && m_pWindow.lock()->isFloating())
         return;
 
     const auto windowBox = assignedBoxGlobal();
@@ -94,7 +95,7 @@ void HyprmodoroDecoration::renderTitleBar(PHLMONITOR pMonitor, float alpha) {
 #endif
 
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_layout.container.width, m_layout.container.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, DATA);
-    Render::GL::g_pHyprOpenGL->renderTexture(m_pTitleTex, m_layout.container, {.a = alpha});
+    Render::GL::g_pHyprOpenGL->renderTexture(ctx, m_pTitleTex, m_layout.container, {.a = alpha});
 
     cairo_destroy(CAIRO);
     cairo_surface_destroy(CAIROSURFACE);
@@ -247,19 +248,19 @@ void HyprmodoroDecoration::renderButtons(cairo_t* cairo, const Vector2D& buffer,
     }
 }
 
-void HyprmodoroDecoration::renderProgressBorder(PHLMONITOR pMonitor, float alpha) {
+void HyprmodoroDecoration::renderProgressBorder(Render::CRenderContext& ctx, PHLMONITOR pMonitor, float alpha) {
     static auto const BORDERCOLOR = CConfigValue<Config::INTEGER>{"plugin:hyprmodoro:border:color"};
     static auto const BORDERFLOATINGWINDOW = CConfigValue<Config::INTEGER>{"plugin:hyprmodoro:border:floating_window"};
     static auto const PTITLEPOSITION = CConfigValue<std::string>{"plugin:hyprmodoro:title:position"};
-    if (!*BORDERFLOATINGWINDOW && m_pWindow.lock()->m_isFloating)
+    if (!*BORDERFLOATINGWINDOW && m_pWindow.lock()->isFloating())
         return;
 
     const auto        SESSIONPROGRESS = g_pGlobalState->pomodoroSession->getProgress();
 
     auto              windowBox = assignedBoxGlobal();
     const auto        PWINDOW   = m_pWindow.lock();
-    const auto        BORDER    = PWINDOW->getRealBorderSize() * pMonitor->m_scale;
-    const auto        ROUNDING  = PWINDOW->rounding() * pMonitor->m_scale;
+    const auto        BORDER    = PWINDOW->presentation().borderSize() * pMonitor->m_scale;
+    const auto        ROUNDING  = PWINDOW->presentation().rounding() * pMonitor->m_scale;
     const std::string position  = std::string(*PTITLEPOSITION);
 
     const auto   corner       = ROUNDING + BORDER;
@@ -470,7 +471,7 @@ void HyprmodoroDecoration::renderProgressBorder(PHLMONITOR pMonitor, float alpha
 #endif
 
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, windowBox.width, windowBox.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, DATA);
-    Render::GL::g_pHyprOpenGL->renderTexture(m_pProgressTex, windowBox, {.a = alpha});
+    Render::GL::g_pHyprOpenGL->renderTexture(ctx, m_pProgressTex, windowBox, {.a = alpha});
 
     cairo_destroy(CAIRO);
     cairo_surface_destroy(CAIROSURFACE);

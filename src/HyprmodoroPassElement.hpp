@@ -14,12 +14,12 @@ class HyprmodoroPassElement : public IPassElement {
     HyprmodoroPassElement(const SBorderPPData& data_);
     virtual ~HyprmodoroPassElement() = default;
 
-    virtual std::vector<UP<IPassElement>> draw();
-    virtual bool             needsLiveBlur();
-    virtual bool             needsPrecomputeBlur();
-    virtual ePassElementType type() { return EK_CUSTOM; }
+    virtual std::vector<UP<IPassElement>> draw(Render::CRenderContext& ctx) override;
+    virtual bool                          needsLiveBlur(Render::CRenderContext&) override;
+    virtual bool                          needsPrecomputeBlur(Render::CRenderContext&) override;
+    virtual ePassElementType              type() override { return EK_CUSTOM; }
 
-    virtual const char* passName() {
+    virtual const char* passName() override {
         return "HyprmodoroPassElement";
     }
 

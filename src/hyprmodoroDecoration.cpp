@@ -5,6 +5,7 @@
 #include <hyprland/src/config/ConfigManager.hpp>
 #include <hyprland/src/desktop/state/FocusState.hpp>
 #include <hyprland/src/managers/fullscreen/FullscreenController.hpp>
+#include <hyprland/src/desktop/view/window/Window.hpp>
 
 #include "hyprmodoroDecoration.hpp"
 #include "HyprmodoroPassElement.hpp"
@@ -125,7 +126,7 @@ CBox HyprmodoroDecoration::assignedBoxGlobal() {
     box.translate(g_pDecorationPositioner->getEdgeDefinedPoint(DECORATION_EDGE_BOTTOM | DECORATION_EDGE_LEFT | DECORATION_EDGE_RIGHT | DECORATION_EDGE_TOP, PWINDOW));
 
     const auto PWORKSPACE      = PWINDOW->m_workspace;
-    const auto WORKSPACEOFFSET = PWORKSPACE && !PWINDOW->m_pinned ? PWORKSPACE->m_renderOffset->value() : Vector2D();
+    const auto WORKSPACEOFFSET = PWORKSPACE && !(PWINDOW->m_state & Desktop::View::WINDOW_STATE_PINNED) ? PWORKSPACE->m_renderOffset->value() : Vector2D();
 
     return box.translate(WORKSPACEOFFSET);
 }
@@ -194,7 +195,7 @@ void HyprmodoroDecoration::handleButtonClick(ButtonAction buttonAction) {
         g_pGlobalState->pomodoroSession->reset();
 }
 
-void HyprmodoroDecoration::draw(PHLMONITOR pMonitor, const float& a) {
+void HyprmodoroDecoration::draw(Render::CRenderContext& ctx, PHLMONITOR pMonitor, const float& a, const Render::SWindowRenderPresentation& presentation) {
     if (!validMapped(m_pWindow))
         return;
 
@@ -203,16 +204,16 @@ void HyprmodoroDecoration::draw(PHLMONITOR pMonitor, const float& a) {
     if (!PWINDOW->m_ruleApplicator->decorate().valueOrDefault())
         return;
 
-    if (!PWINDOW->m_workspace->isVisible() || PWINDOW->isHidden())
+    if (!PWINDOW->m_workspace->visible() || PWINDOW->isHidden())
         return;
 
     HyprmodoroPassElement::SBorderPPData data;
     data.deco = this;
 
-    g_pHyprRenderer->m_renderPass.add(makeUnique<HyprmodoroPassElement>(data));
+    Render::IHyprRenderer::addPassElement(ctx, makeUnique<HyprmodoroPassElement>(data));
 }
 
-void HyprmodoroDecoration::drawPass(PHLMONITOR pMonitor, const float& a) {
+void HyprmodoroDecoration::drawPass(Render::CRenderContext& ctx, PHLMONITOR pMonitor, const float& a) {
     static auto const PENABLED = CConfigValue<Config::INTEGER>{"plugin:hyprmodoro:enabled"};
     static auto const PHOVERTITLE = CConfigValue<Config::INTEGER>{"plugin:hyprmodoro:hover:text"};
     static auto const PHOVERBUTTONS = CConfigValue<Config::INTEGER>{"plugin:hyprmodoro:hover:buttons"};
@@ -233,7 +234,7 @@ void HyprmodoroDecoration::drawPass(PHLMONITOR pMonitor, const float& a) {
     const auto PLASTWINDOW     = Desktop::focusState()->window();
     if (*PBORDERENABLED && SESSIONPROGRESS <= 1.0f && SESSIONPROGRESS > 0.0f) {
         if (*PBORDERALLWINDOWS || PWINDOW == PLASTWINDOW) {
-            renderProgressBorder(pMonitor, a);
+            renderProgressBorder(ctx, pMonitor, a);
         }
     }
 
@@ -241,7 +242,7 @@ void HyprmodoroDecoration::drawPass(PHLMONITOR pMonitor, const float& a) {
 
         if ((*PTITLEALLWINDOWS && (!Fullscreen::controller()->hasFullscreen(pMonitor->m_activeWorkspace) || Fullscreen::controller()->isFullscreen(PWINDOW))) ||
             PWINDOW == PLASTWINDOW) {
-            renderTitleBar(pMonitor, a);
+            renderTitleBar(ctx, pMonitor, a);
         }
     }
     updateWindow(m_pWindow.lock());

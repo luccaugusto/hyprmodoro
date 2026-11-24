@@ -5,6 +5,13 @@
 #include <hyprland/src/event/EventBus.hpp>
 #include <hyprland/src/desktop/state/ViewState.hpp>
 #include <hyprland/src/state/MonitorState.hpp>
+#include <hyprland/src/desktop/view/window/Window.hpp>
+#include <hyprland/src/desktop/view/window/WindowPresentation.hpp>
+#include <hyprland/src/ipc/s1/S1.hpp>
+#include <hyprland/src/config/lua/bindings/LuaBindingsInternal.hpp>
+
+#include <lua.h>
+#include <lauxlib.h>
 
 #include <string>
 #include <hyprland/src/config/values/ConfigValues.hpp>
@@ -69,21 +76,37 @@ SDispatchResult skip(std::string) {
     return SDispatchResult{.error = "hyprmodoro:skip: failed to skip timer"};
 }
 
+// Exposes a dispatcher as hl.plugin.hyprmodoro.<name>([arg])
+template <SDispatchResult (*FN)(std::string)>
+int luaDispatcher(lua_State* L) {
+    const std::string arg = lua_isnoneornil(L, 1) ? "" : luaL_checkstring(L, 1);
+
+    SDispatchResult   result;
+    try {
+        result = FN(arg);
+    } catch (const std::exception&) { result = SDispatchResult{.error = std::format("hyprmodoro: invalid argument \"{}\"", arg)}; }
+
+    if (!result.error.empty())
+        return Config::Lua::Bindings::Internal::dispatcherError(L, result.error);
+
+    return 0;
+}
+
 // hyprctl commands
-std::string getTime(eHyprCtlOutputFormat, std::string) {
+IPC::Socket1::SResponse getTime(const IPC::Socket1::SRequest&) {
     if (!g_pGlobalState->pomodoroSession)
         return std::string("00:00");
     return g_pGlobalState->pomodoroSession->getFormattedTime();
 }
 
-std::string getState(eHyprCtlOutputFormat, std::string) {
+IPC::Socket1::SResponse getState(const IPC::Socket1::SRequest&) {
     if (!g_pGlobalState->pomodoroSession)
         return std::string("STOPPED");
     const std::string states[] = {"STOPPED", "WORKING", "RESTING", "FINISHED", "WAITING_FOR_REST", "WAITING_FOR_WORK"};
     return states[g_pGlobalState->pomodoroSession->getState()];
 }
 
-std::string getProgress(eHyprCtlOutputFormat, std::string) {
+IPC::Socket1::SResponse getProgress(const IPC::Socket1::SRequest&) {
     if (!g_pGlobalState->pomodoroSession)
         return std::string("0.0");
     return std::to_string(g_pGlobalState->pomodoroSession->getProgress());
@@ -97,10 +120,10 @@ void onWindowOpen(void* self, std::any data) {
     if (!(*IS_HYPRMODORO_ENABLED) || PWINDOW == nullptr)
         return;
 
-    if (std::ranges::any_of(PWINDOW->m_windowDecorations, [](const auto& d) { return d->getDisplayName() == "hyprmodoro"; }))
+    if (std::ranges::any_of(PWINDOW->presentation().decorations(), [](const auto& d) { return d->getDisplayName() == "hyprmodoro"; }))
         return;
 
-    auto decoration = makeUnique<HyprmodoroDecoration>(PWINDOW);
+    auto decoration = makeShared<HyprmodoroDecoration>(PWINDOW);
     g_pGlobalState->decorations.emplace_back(decoration);
     decoration->m_self = decoration;
     HyprlandAPI::addWindowDecoration(PHANDLE, PWINDOW, std::move(decoration));
@@ -207,16 +230,16 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     HyprlandAPI::addConfigValueV2(PHANDLE, makeShared<Int>("plugin:hyprmodoro:window:min_width", "Minimum window width for title", 300));
     HyprlandAPI::addConfigValueV2(PHANDLE, makeShared<Int>("plugin:hyprmodoro:window:padding", "Window padding", 0));
 
-    HyprlandAPI::addDispatcherV2(PHANDLE, "hyprmodoro:start", startTimer);
-    HyprlandAPI::addDispatcherV2(PHANDLE, "hyprmodoro:stop", stopTimer);
-    HyprlandAPI::addDispatcherV2(PHANDLE, "hyprmodoro:pause", togglePauseTimer);
-    HyprlandAPI::addDispatcherV2(PHANDLE, "hyprmodoro:set", setTimer);
-    HyprlandAPI::addDispatcherV2(PHANDLE, "hyprmodoro:setRest", setRest);
-    HyprlandAPI::addDispatcherV2(PHANDLE, "hyprmodoro:skip", skip);
+    HyprlandAPI::addLuaFunction(PHANDLE, "hyprmodoro", "start", luaDispatcher<startTimer>);
+    HyprlandAPI::addLuaFunction(PHANDLE, "hyprmodoro", "stop", luaDispatcher<stopTimer>);
+    HyprlandAPI::addLuaFunction(PHANDLE, "hyprmodoro", "pause", luaDispatcher<togglePauseTimer>);
+    HyprlandAPI::addLuaFunction(PHANDLE, "hyprmodoro", "set", luaDispatcher<setTimer>);
+    HyprlandAPI::addLuaFunction(PHANDLE, "hyprmodoro", "setRest", luaDispatcher<setRest>);
+    HyprlandAPI::addLuaFunction(PHANDLE, "hyprmodoro", "skip", luaDispatcher<skip>);
 
-    HyprlandAPI::registerHyprCtlCommand(PHANDLE, SHyprCtlCommand{"hyprmodoro:getProgress", true, getProgress});
-    HyprlandAPI::registerHyprCtlCommand(PHANDLE, SHyprCtlCommand{"hyprmodoro:getState", true, getState});
-    HyprlandAPI::registerHyprCtlCommand(PHANDLE, SHyprCtlCommand{"hyprmodoro:getTime", true, getTime});
+    HyprlandAPI::registerHyprCtlCommand(PHANDLE, IPC::Socket1::SCommand{.name = "hyprmodoro:getProgress", .handler = getProgress});
+    HyprlandAPI::registerHyprCtlCommand(PHANDLE, IPC::Socket1::SCommand{.name = "hyprmodoro:getState", .handler = getState});
+    HyprlandAPI::registerHyprCtlCommand(PHANDLE, IPC::Socket1::SCommand{.name = "hyprmodoro:getTime", .handler = getTime});
 
     static auto const SESSIONLENGTH = CConfigValue<Config::INTEGER>{"plugin:hyprmodoro:work_duration"};
     static auto const RESTLENGTH = CConfigValue<Config::INTEGER>{"plugin:hyprmodoro:rest_duration"};
@@ -278,7 +301,7 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     static auto openWindowCallback = Event::bus()->m_events.window.open.listen([](PHLWINDOW pWindow) { onWindowOpen(nullptr, pWindow); });
 
     for (auto& window : Desktop::viewState()->windows()) {
-        if (window->isHidden() || !window->m_isMapped)
+        if (window->isHidden() || !validMapped(window))
             continue;
         onWindowOpen(nullptr, window);
     }
@@ -290,5 +313,5 @@ APICALL EXPORT void PLUGIN_EXIT() {
     for (auto& m : State::monitorState()->monitors())
         m->m_scheduledRecalc = true;
 
-    g_pHyprRenderer->m_renderPass.removeAllOfType("HyprmodoroPassElement");
+    g_pHyprRenderer->context().m_pass.removeAllOfType("HyprmodoroPassElement");
 }

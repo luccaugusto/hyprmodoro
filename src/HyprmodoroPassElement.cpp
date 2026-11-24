@@ -6,15 +6,15 @@ HyprmodoroPassElement::HyprmodoroPassElement(const HyprmodoroPassElement::SBorde
     ;
 }
 
-std::vector<UP<IPassElement>> HyprmodoroPassElement::draw() {
-    data.deco->drawPass(g_pHyprRenderer->m_renderData.pMonitor.lock(), data.a);
+std::vector<UP<IPassElement>> HyprmodoroPassElement::draw(Render::CRenderContext& ctx) {
+    data.deco->drawPass(ctx, ctx.m_data.pMonitor.lock(), data.a);
     return {};
 }
 
-bool HyprmodoroPassElement::needsLiveBlur() {
+bool HyprmodoroPassElement::needsLiveBlur(Render::CRenderContext&) {
     return false;
 }
 
-bool HyprmodoroPassElement::needsPrecomputeBlur() {
+bool HyprmodoroPassElement::needsPrecomputeBlur(Render::CRenderContext&) {
     return false;
 }
